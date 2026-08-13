@@ -4,67 +4,76 @@ document.addEventListener("DOMContentLoaded", () => {
     const logoutBtn = document.getElementById("logout-btn");
     const fileInput = document.getElementById("profile-upload");
     const imgPreview = document.getElementById("profile-img-preview");
-    
-    const displayName = document.getElementById("display-name");
-    const displayEmail = document.getElementById("display-email");
-    const editName = document.getElementById("edit-name");
-    const editEmail = document.getElementById("edit-email");
 
+    // Element references
+    const fields = ['name', 'email', 'username', 'role', 'branch', 'hostel', 'phone', 'address', 'bio'];
+    const dispEls = {};
+    const editEls = {};
+
+    fields.forEach(f => {
+        dispEls[f] = document.getElementById(`disp-${f}`);
+        editEls[f] = document.getElementById(`edit-${f}`);
+    });
+
+    const displaySection = document.getElementById("display-section");
+    const editSection = document.getElementById("edit-section");
     let isEditing = false;
 
-    // 1. Page load hone par saved data dikhana
-    if(localStorage.getItem("profileName")) {
-        displayName.textContent = localStorage.getItem("profileName");
-        editName.value = localStorage.getItem("profileName");
-    }
-    if(localStorage.getItem("profileEmail")) {
-        displayEmail.textContent = localStorage.getItem("profileEmail");
-        editEmail.value = localStorage.getItem("profileEmail");
-    }
+    // Load Data
+    fields.forEach(f => {
+        const saved = localStorage.getItem(`profile_${f}`);
+        if(saved) {
+            dispEls[f].textContent = saved;
+            editEls[f].value = saved;
+        } else {
+            // Set initial edit input values from default HTML
+            editEls[f].value = dispEls[f].textContent;
+        }
+    });
+
     if(localStorage.getItem("profilePic")) {
         imgPreview.src = localStorage.getItem("profilePic");
     }
 
-    // 2. Profile Edit karne ka Logic
+    // Toggle Edit Mode
     if (editBtn) {
         editBtn.addEventListener("click", () => {
             isEditing = !isEditing;
             
             if(isEditing) {
-                // Edit Mode on karna
-                displayName.classList.add("hidden");
-                displayEmail.classList.add("hidden");
-                editName.classList.remove("hidden");
-                editEmail.classList.remove("hidden");
+                dispEls.name.classList.add("hidden");
+                dispEls.email.classList.add("hidden");
+                editEls.name.classList.remove("hidden");
+                editEls.email.classList.remove("hidden");
                 
-                editBtn.textContent = "Save Changes";
+                displaySection.classList.add("hidden");
+                editSection.classList.remove("hidden");
+                
+                editBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
                 editBtn.classList.replace("btn-outline", "btn-primary");
             } else {
-                // Save Mode - naya data save karna
-                const newName = editName.value.trim();
-                const newEmail = editEmail.value.trim();
-                
-                // UI update karna
-                displayName.textContent = newName;
-                displayEmail.textContent = newEmail;
-                
-                // Naya data localStorage me save karna
-                localStorage.setItem("profileName", newName);
-                localStorage.setItem("profileEmail", newEmail);
+                // Save Data
+                fields.forEach(f => {
+                    const val = editEls[f].value.trim();
+                    dispEls[f].textContent = val;
+                    localStorage.setItem(`profile_${f}`, val);
+                });
 
-                // Wapas Display Mode me aana
-                displayName.classList.remove("hidden");
-                displayEmail.classList.remove("hidden");
-                editName.classList.add("hidden");
-                editEmail.classList.add("hidden");
+                dispEls.name.classList.remove("hidden");
+                dispEls.email.classList.remove("hidden");
+                editEls.name.classList.add("hidden");
+                editEls.email.classList.add("hidden");
                 
-                editBtn.textContent = "Edit Profile";
+                displaySection.classList.remove("hidden");
+                editSection.classList.add("hidden");
+                
+                editBtn.innerHTML = '<i class="fas fa-edit"></i> Edit Profile';
                 editBtn.classList.replace("btn-primary", "btn-outline");
             }
         });
     }
 
-    // 3. Profile Picture Upload karne ka Logic
+    // Upload Image
     if (fileInput) {
         fileInput.addEventListener("change", function() {
             const file = this.files[0];
@@ -73,20 +82,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 reader.onload = function(e) {
                     const base64Image = e.target.result;
                     imgPreview.src = base64Image;
-                    localStorage.setItem("profilePic", base64Image); // Browser me image save karna
+                    localStorage.setItem("profilePic", base64Image);
                 }
                 reader.readAsDataURL(file);
             }
         });
     }
 
-    // 4. Logout karne ka Logic
+    // Logout
     if (logoutBtn) {
         logoutBtn.addEventListener("click", () => {
-            // Authentication token remove karna
             localStorage.removeItem("emergency_token");
-            
-            // Login page par redirect karna
             window.location.href = "login.html";
         });
     }

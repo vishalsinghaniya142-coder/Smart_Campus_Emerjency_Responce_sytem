@@ -1,12 +1,17 @@
-/* css/footer.css */
-.footer {
-    background: var(--text-dark);
-    color: white;
-    padding: 2rem;
-    text-align: center;
-    margin-top: auto;
-}
-
-.footer p { color: var(--text-light); }
-.footer-links { margin-top: 1rem; }
-.footer-links a { color: var(--primary-color); text-decoration: none; margin: 0 10px; }
+/<!-- components/footer.html -->
+<footer class="footer">
+    <div class="container">
+        <h3 style="margin-bottom: 10px; color: white;">SafeGuard Emergency System</h3>
+        <p style="color: #94a3b8; margin-bottom: 1.5rem;">Providing real-time intelligence and rapid response tools for critical situations.</p>
+        
+        <!-- Yahan links ko buttons banaya gaya hai -->
+        <div class="footer-links">
+            <a href="index.html" class="footer-btn"><i class="fas fa-home"></i> Home</a>
+            <a href="about.html" class="footer-btn"><i class="fas fa-info-circle"></i> About Us</a>
+            <a href="contact.html" class="footer-btn"><i class="fas fa-headset"></i> Contact Support</a>
+            <a href="#" class="footer-btn"><i class="fas fa-shield-alt"></i> Privacy Policy</a>
+        </div>
+        
+        <p style="margin-top: 2rem; font-size: 0.9rem; color: #64748b;">&copy; 2026 SafeGuard System. All rights reserved.</p>
+    </div>
+</footer>

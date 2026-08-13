@@ -1,0 +1,18 @@
+/* css/about.css & css/contact.css */
+.page-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+.about-content {
+    font-size: 1.1rem;
+    color: var(--text-light);
+    line-height: 1.8;
+    text-align: center;
+}
+.contact-form {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    margin-top: 2rem;
+}

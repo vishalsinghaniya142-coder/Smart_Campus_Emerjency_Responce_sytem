@@ -1,0 +1,12 @@
+/* css/footer.css */
+.footer {
+    background: var(--text-dark);
+    color: white;
+    padding: 2rem;
+    text-align: center;
+    margin-top: auto;
+}
+
+.footer p { color: var(--text-light); }
+.footer-links { margin-top: 1rem; }
+.footer-links a { color: var(--primary-color); text-decoration: none; margin: 0 10px; }

@@ -5,29 +5,73 @@
     <title>AI Prediction - SafeGuard</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/sidebar.css">
+    <link rel="stylesheet" href="css/prediction.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 </head>
-<body style="display: flex;">
+<body style="display: flex; background: #f4f7f9;">
     <div id="sidebar-placeholder"></div>
     
-    <main style="flex: 1; padding: 2rem; margin-left: 250px;">
-        <h1>AI Disaster Prediction</h1>
-        <p style="margin-bottom: 2rem; color: #64748b;">Enter your location to get real-time AI analysis of potential environmental threats.</p>
+    <main class="prediction-main">
+        <div class="prediction-header">
+            <h1><i class="fas fa-brain" style="color: var(--primary-color);"></i> AI Disaster Prediction</h1>
+            <p>Enter your location to get real-time AI analysis of potential environmental threats.</p>
+        </div>
         
-        <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 600px;">
-            <input type="text" placeholder="Enter City or Pincode" style="width: 70%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
-            <button class="btn btn-primary" style="padding: 10px 20px;">Analyze Risk</button>
+        <div class="prediction-card">
+            <!-- Input Area -->
+            <div class="search-box">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="location-input" placeholder="Enter City (e.g. Lucknow) or Pincode">
+                <button id="analyze-btn" class="btn btn-primary">Analyze Risk</button>
+            </div>
             
-            <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #eee;">
-                <h3>Prediction Results:</h3>
-                <p><strong>Flood Risk:</strong> 15% (Low)</p>
-                <p><strong>Earthquake Probability:</strong> 2% (Minimal)</p>
-                <p><strong>Severe Weather:</strong> 60% (High - Heavy Rain Expected)</p>
+            <!-- AI Processing Loader (Hidden by default) -->
+            <div id="ai-loader" class="hidden" style="text-align: center; margin: 30px 0;">
+                <i class="fas fa-circle-notch fa-spin" style="font-size: 2.5rem; color: var(--primary-color);"></i>
+                <p style="margin-top: 10px; color: var(--text-light); font-weight: 500;">AI is analyzing satellite data and historical patterns...</p>
+            </div>
+
+            <!-- Dynamic Results Area (Hidden by default) -->
+            <div id="prediction-results" class="results-container hidden">
+                <h3 style="border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 20px;">
+                    Threat Analysis for: <span id="result-location" style="color: var(--primary-color);">Location</span>
+                </h3>
+                
+                <!-- Risk Item 1 -->
+                <div class="risk-item">
+                    <div class="risk-label">
+                        <span><i class="fas fa-water" style="color: #3b82f6;"></i> Flood Risk</span>
+                        <span id="flood-val" class="risk-value">0%</span>
+                    </div>
+                    <div class="progress-bg"><div id="flood-bar" class="progress-fill" style="background: #3b82f6;"></div></div>
+                </div>
+
+                <!-- Risk Item 2 -->
+                <div class="risk-item">
+                    <div class="risk-label">
+                        <span><i class="fas fa-house-damage" style="color: #8b5cf6;"></i> Earthquake Probability</span>
+                        <span id="quake-val" class="risk-value">0%</span>
+                    </div>
+                    <div class="progress-bg"><div id="quake-bar" class="progress-fill" style="background: #8b5cf6;"></div></div>
+                </div>
+
+                <!-- Risk Item 3 -->
+                <div class="risk-item">
+                    <div class="risk-label">
+                        <span><i class="fas fa-cloud-showers-heavy" style="color: #f59e0b;"></i> Severe Weather</span>
+                        <span id="weather-val" class="risk-value">0%</span>
+                    </div>
+                    <div class="progress-bg"><div id="weather-bar" class="progress-fill" style="background: #f59e0b;"></div></div>
+                </div>
+                
+                <div id="ai-conclusion" class="ai-alert">
+                    <!-- AI warning text will be injected here -->
+                </div>
             </div>
         </div>
     </main>
 
     <script src="js/main.js"></script>
+    <script src="js/prediction.js"></script>
 </body>
 </html>

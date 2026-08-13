@@ -6,13 +6,13 @@
     <title>Register - SafeGuard</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/login.css">
-    <link rel="stylesheet" href="css/navbar.css">
+    <link rel="stylesheet" href="css/navbar.css"> <!-- Navbar CSS Linked -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="auth-bg">
     <div id="navbar-placeholder"></div>
     
-    <div class="container form-container">
+    <div class="container form-container glass-effect" style="margin-top: 7rem;">
         <h2>Create Account</h2>
         <p class="auth-subtitle">Join SafeGuard to stay protected</p>
         
@@ -32,21 +32,46 @@
             <button type="submit" class="btn btn-primary w-100">Create Account</button>
         </form>
 
-        <!-- Social Login Section -->
-        <div class="auth-divider">
-            <span>OR</span>
-        </div>
+        <div class="auth-divider"><span>OR</span></div>
         
         <div class="social-login">
             <button type="button" class="btn btn-outline social-btn" id="google-register">
-                <i class="fab fa-google" style="color: #db4437;"></i> Sign up with Google
+                <i class="fab fa-google" style="color: #db4437;"></i> Continue with Google
             </button>
             <button type="button" class="btn btn-outline social-btn" id="github-register">
-                <i class="fab fa-github" style="color: #333;"></i> Sign up with GitHub
+                <i class="fab fa-github" style="color: #333;"></i> Continue with GitHub
             </button>
         </div>
 
         <p class="auth-footer">Already have an account? <a href="login.html">Login</a></p>
+    </div>
+
+    <!-- ACCOUNT CHOOSER MODAL FOR REGISTER -->
+    <div id="auth-modal" class="custom-modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <i id="modal-provider-icon" class="fab fa-google" style="font-size: 2rem; color: #db4437; margin-bottom: 10px;"></i>
+                <h3 id="modal-title" style="margin-bottom: 5px;">Sign up</h3>
+                <p style="color: var(--text-light); margin-bottom: 20px;">Choose an account to continue</p>
+            </div>
+            <div class="account-list">
+                <div class="account-item" onclick="selectAccount('virat@example.com', 'Virat Saini')">
+                    <div class="acc-avatar" style="background: #2563eb;">V</div>
+                    <div class="acc-info">
+                        <strong>Virat Saini</strong>
+                        <span>virat@example.com</span>
+                    </div>
+                </div>
+                <div class="account-item" onclick="customAccountLogin()">
+                    <div class="acc-avatar" style="background: #f1f5f9; color: #333;"><i class="fas fa-user-plus"></i></div>
+                    <div class="acc-info">
+                        <strong style="color: #333;">Use another account</strong>
+                        <span>Sign up with a different email</span>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-outline w-100" style="margin-top: 15px;" onclick="closeAuthModal()">Cancel</button>
+        </div>
     </div>
 
     <script src="js/main.js"></script>

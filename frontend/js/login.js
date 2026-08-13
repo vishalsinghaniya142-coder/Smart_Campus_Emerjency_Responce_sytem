@@ -3,25 +3,103 @@
 // --- 1. Normal Login Form Handling ---
 document.addEventListener("DOMContentLoaded", () => {
     const loginForm = document.getElementById("login-form");
-    
+
     if (loginForm) {
-        loginForm.addEventListener("submit", (e) => {
-            e.preventDefault(); // Ye page refresh hone se rokega!
-            
-            const email = document.getElementById("email").value;
-            
-            // Saving data
-            localStorage.setItem("emergency_token", "normal_login_token");
-            localStorage.setItem("profileEmail", email);
-            localStorage.setItem("profileName", email.split('@')[0]);
-            
-            // Success Effect
-            const btn = loginForm.querySelector("button[type='submit']");
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
-            
-            setTimeout(() => {
-                window.location.href = "dashboard.html";
-            }, 800);
+        loginForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const email =
+                document.getElementById("email").value.trim();
+
+            const password =
+                document.getElementById("password").value;
+
+            const btn =
+                loginForm.querySelector(
+                    "button[type='submit']"
+                );
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML =
+                    '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+
+                // Real FastAPI backend call
+                const response = await API.request(
+                    "/auth/login",
+                    "POST",
+                    {
+                        email: email,
+                        password: password
+                    }
+                );
+
+                // Backend response se token nikalo
+                const data = response.data || response;
+
+                const token =
+                    data.access_token ||
+                    data.token;
+
+                if (!token) {
+                    throw new Error(
+                        "Login successful but access token was not received."
+                    );
+                }
+
+                // Save authentication data
+                localStorage.setItem(
+                    "emergency_token",
+                    token
+                );
+
+                if (data.user) {
+                    localStorage.setItem(
+                        "profileEmail",
+                        data.user.email || email
+                    );
+
+                    localStorage.setItem(
+                        "profileName",
+                        data.user.name ||
+                        email.split("@")[0]
+                    );
+
+                    if (data.user.role) {
+                        localStorage.setItem(
+                            "userRole",
+                            data.user.role
+                        );
+                    }
+                } else {
+                    localStorage.setItem(
+                        "profileEmail",
+                        email
+                    );
+
+                    localStorage.setItem(
+                        "profileName",
+                        email.split("@")[0]
+                    );
+                }
+
+                window.location.href =
+                    "dashboard.html";
+
+            } catch (error) {
+                console.error(
+                    "Login failed:",
+                    error
+                );
+
+                alert(
+                    error.message ||
+                    "Login failed. Please check your email and password."
+                );
+
+                btn.disabled = false;
+                btn.innerHTML = "Login";
+            }
         });
     }
 

@@ -1,57 +1,153 @@
-// js/register.js
+// js/report.js
+
 document.addEventListener("DOMContentLoaded", () => {
-    const registerForm = document.getElementById("register-form");
-    
-    if (registerForm) {
-        registerForm.addEventListener("submit", (e) => {
-            e.preventDefault();
-            const name = document.getElementById("name").value;
-            const email = document.getElementById("email").value;
-            
-            localStorage.setItem("profileName", name);
-            localStorage.setItem("profileEmail", email);
-            localStorage.setItem("emergency_token", "registered_token");
-            
-            alert("Account created successfully!");
-            window.location.href = "dashboard.html";
-        });
+
+    const form = document.querySelector("form");
+
+    if (!form) {
+        return;
     }
 
-    // Social buttons modal trigger
-    const authModal = document.getElementById("auth-modal");
-    const modalIcon = document.getElementById("modal-provider-icon");
 
-    document.getElementById("google-register")?.addEventListener("click", () => {
-        modalIcon.className = 'fab fa-google';
-        modalIcon.style.color = '#db4437';
-        authModal.classList.remove("hidden");
+    form.addEventListener("submit", async (e) => {
+
+        e.preventDefault();
+
+
+        // ========================================================
+        // GET FORM DATA
+        // ========================================================
+
+        const incidentType =
+            document.getElementById("incident-type").value.trim();
+
+        const location =
+            document.getElementById("incident-location").value.trim();
+
+        const description =
+            document.getElementById("incident-description").value.trim();
+
+
+        // ========================================================
+        // BASIC VALIDATION
+        // ========================================================
+
+        if (!incidentType) {
+            alert("Please select the type of emergency.");
+            return;
+        }
+
+        if (!location) {
+            alert("Please enter the emergency location.");
+            return;
+        }
+
+        if (!description) {
+            alert("Please enter a description of the emergency.");
+            return;
+        }
+
+
+        // ========================================================
+        // AUTHENTICATION CHECK
+        // ========================================================
+
+        const token =
+            localStorage.getItem("emergency_token");
+
+        if (!token) {
+
+            alert("Please login first to submit an emergency report.");
+
+            window.location.href = "login.html";
+
+            return;
+        }
+
+
+        // ========================================================
+        // SUBMIT BUTTON
+        // ========================================================
+
+        const submitBtn =
+            form.querySelector("button[type='submit']");
+
+
+        try {
+
+            if (submitBtn) {
+
+                submitBtn.disabled = true;
+
+                submitBtn.innerHTML =
+                    '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
+            }
+
+
+            // ====================================================
+            // MEMBER 2 FASTAPI BACKEND
+            // POST /incidents
+            // ====================================================
+
+            const response =
+                await API.request(
+                    "/incidents",
+                    "POST",
+                    {
+                        incident_type: incidentType,
+                        title: incidentType,
+                        description: description,
+                        location: location
+                    }
+                );
+
+
+            console.log(
+                "Incident report response:",
+                response
+            );
+
+
+            // ====================================================
+            // SUCCESS
+            // ====================================================
+
+            alert(
+                "Emergency report submitted successfully. Authorities have been notified."
+            );
+
+
+            form.reset();
+
+
+        } catch (error) {
+
+            console.error(
+                "Incident report error:",
+                error
+            );
+
+
+            alert(
+                error.message ||
+                "Unable to submit emergency report. Please try again."
+            );
+
+
+        } finally {
+
+            if (submitBtn) {
+
+                submitBtn.disabled = false;
+
+                submitBtn.innerHTML =
+                    "Submit Report";
+
+            }
+
+        }
+
     });
 
-    document.getElementById("github-register")?.addEventListener("click", () => {
-        modalIcon.className = 'fab fa-github';
-        modalIcon.style.color = '#333';
-        authModal.classList.remove("hidden");
-    });
 });
-
-// Shared modal functions
-function closeAuthModal() {
-    document.getElementById("auth-modal").classList.add("hidden");
-}
-
-function selectAccount(email, name) {
-    localStorage.setItem("emergency_token", "oauth_token_123");
-    localStorage.setItem("profileEmail", email);
-    localStorage.setItem("profileName", name);
-    window.location.href = "dashboard.html";
-}
-
-function customAccountLogin() {
-    const customEmail = prompt("Enter your email address:");
-    if(customEmail && customEmail.includes('@')) {
-        const name = customEmail.split('@')[0];
-        selectAccount(customEmail, name);
-    } else if (customEmail) {
-        alert("Please enter a valid email!");
-    }
-}

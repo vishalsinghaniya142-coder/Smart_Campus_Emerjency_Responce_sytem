@@ -45,17 +45,77 @@ document.addEventListener("DOMContentLoaded", () => {
                 sosBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> TRANSMITTING...';
                 
                 // Simulate an API call / Geolocation fetch (Takes 1.5 seconds)
-                setTimeout(() => {
-                    // Success Alert
-                    alert("🚨 SOS SIGNAL SENT SUCCESSFULLY!\n\n📍 Location: Lat 26.8467, Lng 80.9462 (Lucknow)\n🚓 Authorities have been notified and help is on the way.");
-                    
-                    // Update button UI permanently
-                    sosBtn.innerHTML = '<i class="fas fa-check-circle"></i> SOS SENT';
-                    sosBtn.style.background = "#16a34a"; // Turn green
-                    sosBtn.style.animation = "none"; // Stop pulsing
-                    
-                    addActivity("🚨 EMERGENCY SOS TRIGGERED! Location broadcasted to authorities.");
-                }, 1500);
+                // Get user's current location and send SOS to backend
+if (!navigator.geolocation) {
+    alert("Geolocation is not supported by your browser.");
+    sosBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> EMERGENCY SOS';
+    return;
+}
+
+navigator.geolocation.getCurrentPosition(
+    async (position) => {
+
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+
+        try {
+
+            const response = await API.request(
+                "/sos",
+                "POST",
+                {
+                    latitude: latitude,
+                    longitude: longitude
+                }
+            );
+
+            console.log("SOS response:", response);
+
+            alert(
+                "🚨 SOS SIGNAL SENT SUCCESSFULLY!\n\n" +
+                "📍 Your current location has been sent to the emergency system."
+            );
+
+            sosBtn.innerHTML =
+                '<i class="fas fa-check-circle"></i> SOS SENT';
+
+            sosBtn.style.background = "#16a34a";
+            sosBtn.style.animation = "none";
+
+            addActivity(
+                "🚨 EMERGENCY SOS TRIGGERED! Current location sent to emergency system."
+            );
+
+        } catch (error) {
+
+            console.error("SOS error:", error);
+
+            alert(
+                error.message ||
+                "Unable to send SOS. Please try again."
+            );
+
+            sosBtn.innerHTML =
+                '<i class="fas fa-exclamation-triangle"></i> EMERGENCY SOS';
+
+        }
+    },
+
+    (error) => {
+
+        console.error(
+            "Location error:",
+            error
+        );
+
+        alert(
+            "Unable to get your location. Please allow location access and try again."
+        );
+
+        sosBtn.innerHTML =
+            '<i class="fas fa-exclamation-triangle"></i> EMERGENCY SOS';
+    }
+);
             }
         });
     }

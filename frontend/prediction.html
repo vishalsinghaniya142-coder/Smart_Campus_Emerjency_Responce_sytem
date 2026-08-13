@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Prediction - SafeGuard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body style="display: flex;">
+    <div id="sidebar-placeholder"></div>
+    
+    <main style="flex: 1; padding: 2rem; margin-left: 250px;">
+        <h1>AI Disaster Prediction</h1>
+        <p style="margin-bottom: 2rem; color: #64748b;">Enter your location to get real-time AI analysis of potential environmental threats.</p>
+        
+        <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 600px;">
+            <input type="text" placeholder="Enter City or Pincode" style="width: 70%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+            <button class="btn btn-primary" style="padding: 10px 20px;">Analyze Risk</button>
+            
+            <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #eee;">
+                <h3>Prediction Results:</h3>
+                <p><strong>Flood Risk:</strong> 15% (Low)</p>
+                <p><strong>Earthquake Probability:</strong> 2% (Minimal)</p>
+                <p><strong>Severe Weather:</strong> 60% (High - Heavy Rain Expected)</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

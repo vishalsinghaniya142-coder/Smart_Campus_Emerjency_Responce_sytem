@@ -9,9 +9,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="auth-bg">
-    <div id="navbar-placeholder"></div>
+    <!-- Navbar placeholder (if needed) -->
+    <div id="navbar-placeholder" style="position: absolute; top: 0; width: 100%;"></div>
     
-    <div class="container form-container">
+    <div class="container form-container glass-effect">
         <h2>Welcome Back</h2>
         <p class="auth-subtitle">Login to your SafeGuard account</p>
         
@@ -25,9 +26,8 @@
                 <input type="password" id="password" required placeholder="Enter your password">
             </div>
             
-            <!-- Forgot Password Link -->
             <div style="text-align: right; margin-bottom: 1rem;">
-                <a href="#" style="color: var(--primary-color); font-size: 0.85rem; text-decoration: none;">Forgot Password?</a>
+                <a href="#" id="forgot-pwd-link" style="color: var(--primary-color); font-size: 0.85rem; text-decoration: none; font-weight: 600;">Forgot Password?</a>
             </div>
 
             <button type="submit" class="btn btn-primary w-100">Login</button>
@@ -45,6 +45,47 @@
         </div>
 
         <p class="auth-footer">New user? <a href="register.html">Create an account</a></p>
+    </div>
+
+    <!-- CUSTOM GOOGLE/GITHUB ACCOUNT CHOOSER MODAL -->
+    <div id="auth-modal" class="custom-modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <i id="modal-provider-icon" class="fab fa-google" style="font-size: 2rem; color: #db4437; margin-bottom: 10px;"></i>
+                <h3 id="modal-title" style="margin-bottom: 5px;">Sign in</h3>
+                <p style="color: var(--text-light); margin-bottom: 20px;">Choose an account to continue</p>
+            </div>
+            <div class="account-list">
+                <!-- Account 1 -->
+                <div class="account-item" onclick="selectAccount('virat@example.com', 'Virat Saini')">
+                    <div class="acc-avatar" style="background: #2563eb;">V</div>
+                    <div class="acc-info">
+                        <strong>Virat Saini</strong>
+                        <span>virat@example.com</span>
+                    </div>
+                </div>
+                <!-- Account 2 -->
+                <div class="account-item" onclick="selectAccount('developer@github.com', 'Dev User')">
+                    <div class="acc-avatar" style="background: #16a34a;">D</div>
+                    <div class="acc-info">
+                        <strong>Dev User</strong>
+                        <span>developer@github.com</span>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-outline w-100" style="margin-top: 15px;" onclick="closeAuthModal()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- CUSTOM FORGOT PASSWORD MODAL -->
+    <div id="forgot-modal" class="custom-modal hidden">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 10px; color: var(--text-dark);">Reset Password</h3>
+            <p style="color: #64748b; margin-bottom: 20px; font-size: 0.9rem;">Enter your email address and we'll send you a link to reset your password.</p>
+            <input type="email" id="reset-email" class="modal-input" placeholder="virat@example.com">
+            <button type="button" class="btn btn-primary w-100" style="margin-bottom: 10px;" onclick="sendResetLink()">Send Reset Link</button>
+            <button type="button" class="btn btn-outline w-100" onclick="closeForgotModal()">Close</button>
+        </div>
     </div>
 
     <script src="js/main.js"></script>

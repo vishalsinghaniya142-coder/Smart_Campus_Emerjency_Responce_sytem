@@ -5,27 +5,44 @@
     <title>My Profile - SafeGuard</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/sidebar.css">
+    <link rel="stylesheet" href="css/profile.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 </head>
-<body style="display: flex;">
+<body style="display: flex; background: #f0f4f8;">
     <div id="sidebar-placeholder"></div>
     
-    <main style="flex: 1; padding: 2rem; margin-left: 250px;">
-        <h1>My Profile</h1>
-        <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 600px; margin-top: 1rem;">
-            <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 2rem;">
-                <div style="width: 80px; height: 80px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem;"><i class="fas fa-user"></i></div>
-                <div>
-                    <h2>Virat Saini</h2>
-                    <p style="color: #64748b;">virat@example.com</p>
-                </div>
+    <main class="profile-main">
+        <!-- Attractive Gradient Background Header -->
+        <div class="profile-header-bg"></div>
+        
+        <div class="profile-card">
+            <!-- Profile Picture Section -->
+            <div class="profile-image-container">
+                <img id="profile-img-preview" src="images/logo.svg" alt="Profile">
+                <label for="profile-upload" class="upload-btn">
+                    <i class="fas fa-camera"></i>
+                </label>
+                <input type="file" id="profile-upload" accept="image/*" class="hidden">
             </div>
-            <button class="btn btn-outline" style="border: 1px solid #ccc; padding: 8px 16px; border-radius: 4px;">Edit Profile</button>
-            <button class="btn btn-danger" style="margin-left: 10px;">Logout</button>
+
+            <!-- Profile Info & Edit Section -->
+            <div class="profile-info">
+                <h2 id="display-name">Virat Saini</h2>
+                <p id="display-email">virat@example.com</p>
+                
+                <!-- Hidden inputs jo "Edit" click karne par show honge -->
+                <input type="text" id="edit-name" class="edit-input hidden" value="Virat Saini">
+                <input type="email" id="edit-email" class="edit-input hidden" value="virat@example.com">
+            </div>
+
+            <div class="profile-actions">
+                <button id="edit-profile-btn" class="btn btn-outline">Edit Profile</button>
+                <button id="logout-btn" class="btn btn-danger">Logout</button>
+            </div>
         </div>
     </main>
 
     <script src="js/main.js"></script>
+    <script src="js/profile.js"></script>
 </body>
 </html>

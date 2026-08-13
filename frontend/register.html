@@ -5,33 +5,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - SafeGuard</title>
     <link rel="stylesheet" href="css/style.css">
-    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-
+    <link rel="stylesheet" href="css/login.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="auth-bg">
     <div id="navbar-placeholder"></div>
     
-    <div class="container form-container" style="max-width: 400px; margin: 5rem auto; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-        <h2 style="text-align: center; margin-bottom: 1.5rem;">Register</h2>
+    <div class="container form-container">
+        <h2>Create Account</h2>
+        <p class="auth-subtitle">Join SafeGuard to stay protected</p>
+        
         <form id="register-form">
-            <div class="form-group" style="margin-bottom: 1rem;">
+            <div class="form-group">
                 <label>Full Name</label>
-                <input type="text" id="name" required style="width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
+                <input type="text" id="name" required placeholder="Enter your full name">
             </div>
-            <div class="form-group" style="margin-bottom: 1rem;">
+            <div class="form-group">
                 <label>Email Address</label>
-                <input type="email" id="email" required style="width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
+                <input type="email" id="email" required placeholder="Enter your email">
             </div>
-            <div class="form-group" style="margin-bottom: 1.5rem;">
+            <div class="form-group">
                 <label>Password</label>
-                <input type="password" id="password" required style="width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
+                <input type="password" id="password" required placeholder="Create a password">
             </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%;">Create Account</button>
+            <button type="submit" class="btn btn-primary w-100">Create Account</button>
         </form>
-        <p style="text-align: center; margin-top: 1rem;">Already have an account? <a href="login.html">Login</a></p>
+
+        <!-- Social Login Section -->
+        <div class="auth-divider">
+            <span>OR</span>
+        </div>
+        
+        <div class="social-login">
+            <button type="button" class="btn btn-outline social-btn" id="google-register">
+                <i class="fab fa-google" style="color: #db4437;"></i> Sign up with Google
+            </button>
+            <button type="button" class="btn btn-outline social-btn" id="github-register">
+                <i class="fab fa-github" style="color: #333;"></i> Sign up with GitHub
+            </button>
+        </div>
+
+        <p class="auth-footer">Already have an account? <a href="login.html">Login</a></p>
     </div>
 
     <script src="js/main.js"></script>
-    <script src="js/auth.js"></script>
+    <script src="js/register.js"></script>
 </body>
 </html>

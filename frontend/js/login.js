@@ -88,3 +88,41 @@ function sendResetLink() {
     alert(`Password reset link has been successfully sent to ${email}`);
     closeForgotModal();
 }
+// --- Use Another Account Logic ---
+function customAccountLogin() {
+    const customEmail = prompt("Enter the email address you want to use:");
+    if(customEmail && customEmail.includes('@')) {
+        const name = customEmail.split('@')[0];
+        selectAccount(customEmail, name); // Call existing select function
+    } else if (customEmail) {
+        alert("Please enter a valid email!");
+    }
+}
+
+// --- Phone Login Logic ---
+document.getElementById("phone-login")?.addEventListener("click", () => {
+    document.getElementById("phone-modal").classList.remove("hidden");
+});
+
+function sendOTP() {
+    const phone = document.getElementById("phone-input").value;
+    if(phone.length < 10) {
+        alert("Please enter a valid phone number!");
+        return;
+    }
+    
+    // OTP Simulation
+    const otp = prompt(`An OTP has been sent to ${phone}.\nPlease enter the 4-digit OTP (hint: type 1234):`);
+    
+    if(otp === "1234") {
+        localStorage.setItem("emergency_token", "phone_auth_token");
+        localStorage.setItem("profileEmail", phone);
+        localStorage.setItem("profileName", "Phone User");
+        
+        alert("Phone verification successful!");
+        window.location.href = "dashboard.html";
+    } else {
+        alert("Invalid OTP! Try again.");
+    }
+}
+

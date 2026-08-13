@@ -88,6 +88,15 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
+    // Remove Profile Picture Logic
+    const removePicBtn = document.getElementById("remove-pic-btn");
+    if(removePicBtn) {
+        removePicBtn.addEventListener("click", () => {
+            localStorage.removeItem("profilePic"); // Local storage se delete karega
+            imgPreview.src = "images/logo.svg"; // Default logo wapas set karega
+        });
+    }
+
 
     // Logout
     if (logoutBtn) {

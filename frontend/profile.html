@@ -17,14 +17,23 @@
         </div>
         
         <div class="profile-card">
-            <!-- Profile Picture Section (Using a cool default UI Avatar) -->
+            <!-- Profile Picture Section -->
             <div class="profile-image-container">
-                <img id="profile-img-preview" src="https://ui-avatars.com/api/?name=Virat+Saini&background=2563eb&color=fff&size=150" alt="Profile">
-                <label for="profile-upload" class="upload-btn">
+                <img id="profile-img-preview" src="images/logo.svg" onerror="this.src='images/logo.png'" alt="Profile">
+                
+                <!-- Upload Camera Button -->
+                <label for="profile-upload" class="upload-btn" title="Upload Photo">
                     <i class="fas fa-camera"></i>
                 </label>
                 <input type="file" id="profile-upload" accept="image/*" class="hidden">
+                
+                <!-- Remove Photo Button -->
+                <button id="remove-pic-btn" class="remove-btn" title="Remove Photo">
+                    <i class="fas fa-trash"></i>
+                </button>
             </div>
+            
+            
 
             <!-- Header Info -->
             <div class="profile-info-header">

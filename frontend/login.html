@@ -47,6 +47,22 @@
         <p class="auth-footer">New user? <a href="register.html">Create an account</a></p>
     </div>
 
+    <!-- Social Login Section -->
+        <div class="social-login">
+            <button type="button" class="btn btn-outline social-btn" id="google-login">
+                <i class="fab fa-google" style="color: #db4437;"></i> Continue with Google
+            </button>
+            <button type="button" class="btn btn-outline social-btn" id="github-login">
+                <i class="fab fa-github" style="color: #333;"></i> Continue with GitHub
+            </button>
+            <button type="button" class="btn btn-outline social-btn" id="phone-login">
+                <i class="fas fa-phone-alt" style="color: #16a34a;"></i> Continue with Phone
+            </button>
+        </div>
+
+        <p class="auth-footer">New user? <a href="register.html">Create an account</a></p>
+    </div>
+
     <!-- CUSTOM GOOGLE/GITHUB ACCOUNT CHOOSER MODAL -->
     <div id="auth-modal" class="custom-modal hidden">
         <div class="modal-content">
@@ -56,7 +72,6 @@
                 <p style="color: var(--text-light); margin-bottom: 20px;">Choose an account to continue</p>
             </div>
             <div class="account-list">
-                <!-- Account 1 -->
                 <div class="account-item" onclick="selectAccount('virat@example.com', 'Virat Saini')">
                     <div class="acc-avatar" style="background: #2563eb;">V</div>
                     <div class="acc-info">
@@ -64,12 +79,12 @@
                         <span>virat@example.com</span>
                     </div>
                 </div>
-                <!-- Account 2 -->
-                <div class="account-item" onclick="selectAccount('developer@github.com', 'Dev User')">
-                    <div class="acc-avatar" style="background: #16a34a;">D</div>
+                <!-- ADD ANOTHER ACCOUNT OPTION -->
+                <div class="account-item" onclick="customAccountLogin()">
+                    <div class="acc-avatar" style="background: #f1f5f9; color: #333;"><i class="fas fa-user-plus"></i></div>
                     <div class="acc-info">
-                        <strong>Dev User</strong>
-                        <span>developer@github.com</span>
+                        <strong style="color: #333;">Use another account</strong>
+                        <span>Sign in with a different email</span>
                     </div>
                 </div>
             </div>
@@ -77,6 +92,16 @@
         </div>
     </div>
 
+    <!-- PHONE NUMBER OTP MODAL -->
+    <div id="phone-modal" class="custom-modal hidden">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 10px; color: var(--text-dark);"><i class="fas fa-mobile-alt" style="color: #16a34a;"></i> Phone Login</h3>
+            <p style="color: #64748b; margin-bottom: 20px; font-size: 0.9rem;">Enter your phone number to receive an OTP.</p>
+            <input type="tel" id="phone-input" class="modal-input" placeholder="+91 9876543210">
+            <button type="button" class="btn btn-primary w-100" style="margin-bottom: 10px; background: #16a34a;" onclick="sendOTP()">Send OTP</button>
+            <button type="button" class="btn btn-outline w-100" onclick="document.getElementById('phone-modal').classList.add('hidden')">Cancel</button>
+        </div>
+    </div>
     <!-- CUSTOM FORGOT PASSWORD MODAL -->
     <div id="forgot-modal" class="custom-modal hidden">
         <div class="modal-content">

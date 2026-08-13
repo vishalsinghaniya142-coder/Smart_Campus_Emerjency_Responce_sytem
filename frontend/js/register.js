@@ -1,41 +1,31 @@
-// js/register.js
 document.addEventListener("DOMContentLoaded", () => {
-    const registerForm = document.getElementById("register-form");
-    
-    // Normal Registration
-    if (registerForm) {
-        registerForm.addEventListener("submit", (e) => {
-            e.preventDefault();
-            const name = document.getElementById("name").value;
-            const email = document.getElementById("email").value;
-            
-            // Set session data
-            localStorage.setItem("profileName", name);
-            localStorage.setItem("profileEmail", email);
-            
-            alert("Registration successful! Please login.");
-            window.location.href = "login.html";
-        });
-    }
-
-    // Social Registration common function
-    const handleSocialAuth = (provider) => {
-        localStorage.setItem("emergency_token", `${provider}_oauth_token`);
-        localStorage.setItem("profileName", `New ${provider} User`);
-        
-        alert(`Account created and linked with ${provider}!`);
+    const handleAuth = (e) => {
+        e.preventDefault();
+        const email = document.getElementById("email") ? document.getElementById("email").value : "virat@example.com";
+        localStorage.setItem("emergency_token", "fake_jwt_token_123");
+        localStorage.setItem("profileEmail", email);
         window.location.href = "dashboard.html";
     };
 
-    // Google Auth
-    const googleRegBtn = document.getElementById("google-register");
-    if (googleRegBtn) {
-        googleRegBtn.addEventListener("click", () => handleSocialAuth("Google"));
-    }
+    const handleSocialAuth = (provider) => {
+        // Simulating the "Choose an account" popup
+        const userEmail = prompt(`[${provider} Auth]\nPlease choose your account by entering your email:`, "virat@gmail.com");
+        
+        if(userEmail) {
+            localStorage.setItem("emergency_token", `${provider}_oauth_token`);
+            localStorage.setItem("profileName", userEmail.split('@')[0]);
+            localStorage.setItem("profileEmail", userEmail);
+            alert(`Successfully authenticated with ${provider}!`);
+            window.location.href = "dashboard.html";
+        }
+    };
 
-    // GitHub Auth
-    const githubRegBtn = document.getElementById("github-register");
-    if (githubRegBtn) {
-        githubRegBtn.addEventListener("click", () => handleSocialAuth("GitHub"));
-    }
+    const loginForm = document.getElementById("login-form");
+    if (loginForm) loginForm.addEventListener("submit", handleAuth);
+
+    const googleBtn = document.getElementById("google-login");
+    if (googleBtn) googleBtn.addEventListener("click", () => handleSocialAuth("Google"));
+
+    const githubBtn = document.getElementById("github-login");
+    if (githubBtn) githubBtn.addEventListener("click", () => handleSocialAuth("GitHub"));
 });

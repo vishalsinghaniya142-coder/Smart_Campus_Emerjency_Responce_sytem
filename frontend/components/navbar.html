@@ -1,0 +1,41 @@
+<!-- components/navbar.html -->
+<nav class="navbar">
+    <div class="nav-brand">
+        <!-- Sidebar Toggle for Mobile -->
+        <button id="sidebar-toggle" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; display: none; margin-right: 15px;">
+            <i class="fas fa-bars"></i>
+        </button>
+        <img src="images/logo.svg" alt="Logo" class="logo" style="height: 40px; border-radius: 50%;" onerror="this.style.display='none'">
+        <span style="margin-left: 10px;">SafeGuard</span>
+    </div>
+    
+    <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><a href="contact.html">Contact</a></li>
+    </ul>
+
+    <div class="nav-auth">
+        <!-- Default State -->
+        <a href="login.html" class="btn btn-outline" id="nav-login-btn">Login</a>
+        <a href="register.html" class="btn btn-primary" id="nav-register-btn">Register</a>
+        <!-- Logged In State (handled via JS) -->
+        <a href="profile.html" class="profile-icon" id="nav-profile-btn" style="display: none; font-size: 1.5rem; color: var(--primary-color);">
+            <i class="fas fa-user-circle"></i>
+        </a>
+    </div>
+</nav>
+
+<script>
+    // Navbar specific quick check for auth state
+    if(localStorage.getItem('emergency_token')) {
+        document.getElementById('nav-login-btn').style.display = 'none';
+        document.getElementById('nav-register-btn').style.display = 'none';
+        document.getElementById('nav-profile-btn').style.display = 'block';
+    }
+    
+    // Mobile responsive styling trigger
+    if(window.innerWidth <= 768) {
+        document.getElementById('sidebar-toggle').style.display = 'block';
+    }
+</script>

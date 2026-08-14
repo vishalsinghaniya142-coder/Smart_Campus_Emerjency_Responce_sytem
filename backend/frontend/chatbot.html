@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Assistant - SafeGuard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+</head>
+<body style="display: flex;">
+    <div id="sidebar-placeholder"></div>
+    
+    <main style="flex: 1; padding: 2rem; margin-left: 250px;">
+        <h1>Emergency AI Assistant</h1>
+        <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 600px; height: 500px; display: flex; flex-direction: column; margin-top: 1rem;">
+            <div style="flex: 1; padding: 1.5rem; overflow-y: auto; background: #f8fafc;">
+                <p style="background: #e2e8f0; padding: 10px; border-radius: 8px; width: fit-content; margin-bottom: 10px;">Hello! I am the SafeGuard AI. How can I help you during this situation?</p>
+            </div>
+            <div style="padding: 1rem; border-top: 1px solid #e2e8f0; display: flex; gap: 10px;">
+                <input type="text" placeholder="Type your query..." style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                <button class="btn btn-primary"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

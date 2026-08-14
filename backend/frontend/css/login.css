@@ -1,0 +1,93 @@
+/* css/login.css */
+/* --- Animated Premium Background --- */
+.auth-bg {
+    background: linear-gradient(-45deg, #0f172a, #1e3a8a, #3b82f6, #0f172a);
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+@keyframes gradientBG {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* --- Glassmorphism Form Container --- */
+.form-container.glass-effect {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 2.5rem;
+    border-radius: 16px;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+    width: 100%;
+    max-width: 420px;
+    margin: auto;
+    z-index: 10;
+}
+
+.form-container h2 { text-align: center; color: var(--text-dark); margin-bottom: 5px; font-weight: 700; }
+.auth-subtitle { text-align: center; color: var(--text-light); margin-bottom: 1.5rem; font-size: 0.95rem; }
+.auth-footer { text-align: center; margin-top: 1.5rem; font-size: 0.95rem; }
+.auth-footer a { color: var(--primary-color); text-decoration: none; font-weight: 600; }
+
+.auth-divider { display: flex; align-items: center; text-align: center; margin: 1.5rem 0; color: var(--text-light); font-size: 0.9rem; }
+.auth-divider::before, .auth-divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--border-color); }
+.auth-divider span { padding: 0 10px; }
+
+.social-login { display: flex; flex-direction: column; gap: 10px; }
+.social-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; background: white; border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-weight: 500; transition: all 0.3s ease; cursor: pointer; }
+.social-btn:hover { background: #f8fafc; border-color: #cbd5e1; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transform: translateY(-2px); }
+
+/* --- CUSTOM MODALS STYLING (Google/GitHub Chooser) --- */
+.custom-modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999;
+    opacity: 1; transition: opacity 0.3s;
+}
+
+.custom-modal.hidden { display: none; opacity: 0; }
+
+.modal-content {
+    background: white; padding: 2rem; border-radius: 16px;
+    width: 90%; max-width: 400px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    text-align: center;
+    transform: scale(1); animation: modalPop 0.3s ease-out;
+}
+
+@keyframes modalPop { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+.account-list { display: flex; flex-direction: column; gap: 10px; text-align: left; }
+
+.account-item {
+    display: flex; align-items: center; gap: 15px; padding: 12px;
+    border: 1px solid var(--border-color); border-radius: 8px;
+    cursor: pointer; transition: 0.2s;
+}
+
+.account-item:hover { background: #f1f5f9; border-color: var(--primary-color); }
+
+.acc-avatar {
+    width: 40px; height: 40px; border-radius: 50%; color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold; font-size: 1.2rem;
+}
+
+.acc-info { display: flex; flex-direction: column; }
+.acc-info strong { color: var(--text-dark); font-size: 1rem; }
+.acc-info span { color: var(--text-light); font-size: 0.85rem; }
+
+.modal-input {
+    width: 100%; padding: 12px; margin-bottom: 20px;
+    border: 1px solid var(--border-color); border-radius: 8px;
+    font-size: 1rem;
+}
+.modal-input:focus { outline: none; border-color: var(--primary-color); }

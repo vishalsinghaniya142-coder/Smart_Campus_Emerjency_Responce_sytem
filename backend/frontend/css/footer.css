@@ -1,0 +1,45 @@
+/* css/footer.css */
+.footer {
+    background: #0f172a; /* Premium Dark Background */
+    color: white;
+    padding: 3rem 2rem 2rem;
+    text-align: center;
+    margin-top: auto; /* Pushes footer to the bottom */
+    width: 100%;
+}
+
+.footer-links {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 15px; /* Spacing between buttons */
+    margin: 1.5rem 0;
+}
+
+.footer-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.05); /* Transparent button background */
+    color: #cbd5e1;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 30px; /* Pill-shaped buttons */
+    font-size: 0.95rem;
+    font-weight: 500;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.footer-btn i {
+    font-size: 1.1rem;
+}
+
+/* Hover Effect for Footer Buttons */
+.footer-btn:hover {
+    background: var(--primary-color, #2563eb);
+    color: white;
+    border-color: var(--primary-color, #2563eb);
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(37, 99, 235, 0.4);
+}

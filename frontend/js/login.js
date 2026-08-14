@@ -1,122 +1,101 @@
-// js/login.js
+// frontend/js/login.js
 
-// --- 1. Normal Login Form Handling ---
 document.addEventListener("DOMContentLoaded", () => {
     const loginForm = document.getElementById("login-form");
-    
+
+    // 1. Regular Email/Password Login with FastAPI Backend
     if (loginForm) {
-        loginForm.addEventListener("submit", (e) => {
-            e.preventDefault(); // Ye page refresh hone se rokega!
-            
+        loginForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
             const email = document.getElementById("email").value;
-            
-            // Saving data
-            localStorage.setItem("emergency_token", "normal_login_token");
-            localStorage.setItem("profileEmail", email);
-            localStorage.setItem("profileName", email.split('@')[0]);
-            
-            // Success Effect
-            const btn = loginForm.querySelector("button[type='submit']");
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
-            
-            setTimeout(() => {
-                window.location.href = "dashboard.html";
-            }, 800);
+            const password = document.getElementById("password").value;
+
+            try {
+                // FastAPI backend ke /auth/login endpoint par request bhej raha hai
+                const result = await API.post("/auth/login", { email, password });
+                
+                if (result.access_token) {
+                    localStorage.setItem("emergency_token", result.access_token);
+                    localStorage.setItem("profileEmail", email);
+                    localStorage.setItem("profileName", email.split('@')[0]);
+                    
+                    alert("Login successful!");
+                    window.location.href = "dashboard.html";
+                } else {
+                    alert(result.detail || "Invalid credentials!");
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Server connection failed! Make sure FastAPI backend is running on port 8000.");
+            }
         });
     }
 
-    // --- 2. Open Social Login Modal ---
-    let currentProvider = '';
+    // 2. Social Login Modal Triggers (Google / GitHub)
     const authModal = document.getElementById("auth-modal");
     const modalIcon = document.getElementById("modal-provider-icon");
+    const modalTitle = document.getElementById("modal-title");
 
     document.getElementById("google-login")?.addEventListener("click", () => {
-        currentProvider = 'Google';
-        modalIcon.className = 'fab fa-google';
-        modalIcon.style.color = '#db4437';
-        authModal.classList.remove("hidden");
+        if(modalIcon) {
+            modalIcon.className = 'fab fa-google';
+            modalIcon.style.color = '#db4437';
+        }
+        if(modalTitle) modalTitle.textContent = "Sign in with Google";
+        authModal?.classList.remove("hidden");
     });
 
     document.getElementById("github-login")?.addEventListener("click", () => {
-        currentProvider = 'GitHub';
-        modalIcon.className = 'fab fa-github';
-        modalIcon.style.color = '#333';
-        authModal.classList.remove("hidden");
+        if(modalIcon) {
+            modalIcon.className = 'fab fa-github';
+            modalIcon.style.color = '#333';
+        }
+        if(modalTitle) modalTitle.textContent = "Sign in with GitHub";
+        authModal?.classList.remove("hidden");
     });
 
-    // --- 3. Forgot Password Modal Logic ---
-    const forgotModal = document.getElementById("forgot-modal");
-    
-    document.getElementById("forgot-pwd-link")?.addEventListener("click", (e) => {
-        e.preventDefault();
-        forgotModal.classList.remove("hidden");
+    // 3. Phone Login Modal Trigger
+    document.getElementById("phone-login")?.addEventListener("click", () => {
+        document.getElementById("phone-modal")?.classList.remove("hidden");
     });
 });
 
-// --- Modal Global Functions ---
+// --- Modal Helper Functions ---
 
 function closeAuthModal() {
-    document.getElementById("auth-modal").classList.add("hidden");
+    document.getElementById("auth-modal")?.classList.add("hidden");
 }
 
-function closeForgotModal() {
-    document.getElementById("forgot-modal").classList.add("hidden");
-}
-
-// Jab user official-looking account select karega:
 function selectAccount(email, name) {
-    localStorage.setItem("emergency_token", "oauth_token_123");
+    localStorage.setItem("emergency_token", "oauth_mock_token_123");
     localStorage.setItem("profileEmail", email);
     localStorage.setItem("profileName", name);
-    
-    // UI feedback
-    document.getElementById("modal-title").innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-    
-    setTimeout(() => {
-        window.location.href = "dashboard.html";
-    }, 1000);
+    window.location.href = "dashboard.html";
 }
 
-// Reset password bhejne ki script
-function sendResetLink() {
-    const email = document.getElementById("reset-email").value;
-    if(!email) {
-        alert("Please enter a valid email address!");
-        return;
-    }
-    
-    alert(`Password reset link has been successfully sent to ${email}`);
-    closeForgotModal();
-}
-// --- Use Another Account Logic ---
 function customAccountLogin() {
     const customEmail = prompt("Enter the email address you want to use:");
     if(customEmail && customEmail.includes('@')) {
         const name = customEmail.split('@')[0];
-        selectAccount(customEmail, name); // Call existing select function
+        selectAccount(customEmail, name);
     } else if (customEmail) {
         alert("Please enter a valid email!");
     }
 }
 
-// --- Phone Login Logic ---
-document.getElementById("phone-login")?.addEventListener("click", () => {
-    document.getElementById("phone-modal").classList.remove("hidden");
-});
-
+// --- Phone OTP Simulation Logic ---
 function sendOTP() {
-    const phone = document.getElementById("phone-input").value;
-    if(phone.length < 10) {
+    const phone = document.getElementById("phone-input")?.value;
+    if(!phone || phone.length < 10) {
         alert("Please enter a valid phone number!");
         return;
     }
     
-    // OTP Simulation
     const otp = prompt(`An OTP has been sent to ${phone}.\nPlease enter the 4-digit OTP (hint: type 1234):`);
     
     if(otp === "1234") {
         localStorage.setItem("emergency_token", "phone_auth_token");
-        localStorage.setItem("profileEmail", phone);
+        localStorage.setItem("profileEmail", phone + "@phone.auth");
         localStorage.setItem("profileName", "Phone User");
         
         alert("Phone verification successful!");
@@ -125,4 +104,3 @@ function sendOTP() {
         alert("Invalid OTP! Try again.");
     }
 }
-

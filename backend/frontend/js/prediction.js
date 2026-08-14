@@ -1,4 +1,4 @@
-// js/prediction.js
+// // frontend/js/prediction.js
 document.addEventListener("DOMContentLoaded", () => {
     const analyzeBtn = document.getElementById("analyze-btn");
     const locationInput = document.getElementById("location-input");
@@ -16,7 +16,8 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     if (analyzeBtn && locationInput) {
-        analyzeBtn.addEventListener("click", () => {
+        // Backend ka wait karne ke liye function ko 'async' banana zaroori hai
+        analyzeBtn.addEventListener("click", async () => {
             const loc = locationInput.value.trim();
             
             if (!loc) {
@@ -37,12 +38,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 b.val.textContent = '0%';
             });
 
-            // 3. Simulate API/AI Delay (2 seconds)
-            setTimeout(() => {
-                // Generate pseudo-random risk data (0 to 100%)
-                const floodRisk = Math.floor(Math.random() * 85) + 5; 
-                const quakeRisk = Math.floor(Math.random() * 40) + 1; // Quakes usually lower prob
-                const weatherRisk = Math.floor(Math.random() * 90) + 10;
+            try {
+                // 3. REAL BACKEND CALL (Fake random data hata diya gaya hai)
+                // Ye api.js se API_BASE_URL (http://127.0.0.1:8000/prediction) ko request bhejega
+                const data = await API.post("/prediction", { location: loc });
+
+                // Backend se aaye hue result ko variables mein set karna
+                const floodRisk = data.flood_risk || 0; 
+                const quakeRisk = data.earthquake_prob || 0; 
+                const weatherRisk = data.severe_weather || 0;
 
                 // Stop Loader & Show Results
                 aiLoader.classList.add("hidden");
@@ -51,7 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 analyzeBtn.innerHTML = 'Analyze Risk';
                 
                 // Update text
-                locDisplay.textContent = loc.toUpperCase();
+                if (locDisplay) locDisplay.textContent = loc.toUpperCase();
 
                 // Animate bars and set text
                 setTimeout(() => {
@@ -75,11 +79,19 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 }, 100); // Small delay to trigger CSS animation
 
-            }, 2000);
+            } catch (error) {
+                // Agar backend band hai ya koi error aata hai
+                console.error("Backend fetch error:", error);
+                aiLoader.classList.add("hidden");
+                analyzeBtn.disabled = false;
+                analyzeBtn.innerHTML = 'Analyze Risk';
+                alert("Failed to fetch AI prediction from backend. Make sure the FastAPI server is running.");
+            }
         });
     }
 
     function setConclusion(text, bg, border, textColor) {
+        if(!aiConclusion) return;
         aiConclusion.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${text}`;
         aiConclusion.style.background = bg;
         aiConclusion.style.borderLeftColor = border;

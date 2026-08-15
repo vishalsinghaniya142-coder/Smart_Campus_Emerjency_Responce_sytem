@@ -4,6 +4,9 @@ from fastapi import FastAPI
 
 from app.config import settings
 
+from app.services.auth_service import configure_user_repository
+from app.services.database.users import FirebaseUserRepository
+
 from app.middleware.cors import configure_cors
 from app.middleware.error_handler import (
     register_exception_handlers,
@@ -114,22 +117,49 @@ async def lifespan(app: FastAPI):
 
     print("Loading application configuration...")
     print("Loading middleware...")
+    print("Loading database...")
+
+
+# ========================================================
+# FIREBASE / USER REPOSITORY
+# ========================================================
+
+    try:
+        user_repository = FirebaseUserRepository()
+
+        configure_user_repository(
+        user_repository
+                        )
+
+        print("Firebase user repository configured.")
+
+    except Exception as exc:
+        print(
+        f"Firebase user repository configuration failed: {exc}"
+        )
+        raise
+
+
     print("Loading API routes...")
     print("Backend startup completed.")
 
+# --------------------------------------------------------
+# APPLICATION RUNNING
+# --------------------------------------------------------
+
     yield
 
-    # --------------------------------------------------------
-    # SHUTDOWN
-    # --------------------------------------------------------
+# --------------------------------------------------------
+# SHUTDOWN
+# --------------------------------------------------------
 
-    print("=" * 70)
-    print(
-        "Shutting down Smart Campus Emergency Response System"
+print("=" * 70)
+print(
+    "Shutting down Smart Campus Emergency Response System"
     )
-    print("=" * 70)
+print("=" * 70)
 
-    print("Backend shutdown completed.")
+print("Backend shutdown completed.")
 
 
 # ============================================================

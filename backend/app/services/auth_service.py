@@ -190,70 +190,20 @@ class UserRepository(Protocol):
 # This prevents us from incorrectly putting Firebase logic
 # inside Member 2's backend service.
 # ============================================================
-
 # ============================================================
-# TEMPORARY IN-MEMORY USER REPOSITORY
+# DATABASE USER REPOSITORY
 # ============================================================
 #
-# Development/testing only.
-# This will later be replaced by Member 4's Firebase repository.
-# Data is lost whenever the backend restarts.
+# The concrete database implementation will be provided by
+# the database layer.
+#
+# auth_service.py only depends on the UserRepository contract.
+# Firebase/Firestore will be connected during application
+# startup.
 # ============================================================
 
-class InMemoryUserRepository:
-    def __init__(self):
-        self.users: Dict[str, UserAuthentication] = {}
-
-    async def create_user(
-        self,
-        user: UserAuthentication,
-    ) -> UserAuthentication:
-        self.users[user.id] = user
-        return user
-
-    async def get_user_by_email(
-        self,
-        email: str,
-    ) -> Optional[UserAuthentication]:
-
-        normalized_email = email.strip().lower()
-
-        for user in self.users.values():
-            if str(user.email).lower() == normalized_email:
-                return user
-
-        return None
-
-    async def get_user_by_id(
-        self,
-        user_id: str,
-    ) -> Optional[UserAuthentication]:
-
-        return self.users.get(user_id)
-
-    async def update_user(
-        self,
-        user_id: str,
-        updates: Dict[str, Any],
-    ) -> Optional[UserAuthentication]:
-
-        user = self.users.get(user_id)
-
-        if user is None:
-            return None
-
-        updated_user = user.model_copy(
-            update=updates
-        )
-
-        self.users[user_id] = updated_user
-
-        return updated_user
-
-
-# Temporary repository for local development/testing.
-_user_repository: Optional[UserRepository] = InMemoryUserRepository()
-
+_user_repository: Optional[UserRepository] = None
+# ============================================================
 
 # ============================================================
 # CONFIGURE USER REPOSITORY

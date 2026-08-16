@@ -1,106 +1,587 @@
-// frontend/js/login.js
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
 
-document.addEventListener("DOMContentLoaded", () => {
-    const loginForm = document.getElementById("login-form");
+        const form =
+            document.getElementById(
+                "login-form"
+            );
 
-    // 1. Regular Email/Password Login with FastAPI Backend
-    if (loginForm) {
-        loginForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const email = document.getElementById("email").value;
-            const password = document.getElementById("password").value;
+        const message =
+            document.getElementById(
+                "auth-message"
+            );
 
-            try {
-                // FastAPI backend ke /auth/login endpoint par request bhej raha hai
-                const result = await API.post("/auth/login", { email, password });
-                
-                if (result.access_token) {
-                    localStorage.setItem("emergency_token", result.access_token);
-                    localStorage.setItem("profileEmail", email);
-                    localStorage.setItem("profileName", email.split('@')[0]);
-                    
-                    alert("Login successful!");
-                    window.location.href = "dashboard.html";
-                } else {
-                    alert(result.detail || "Invalid credentials!");
-                }
-            } catch (err) {
-                console.error(err);
-                alert("Server connection failed! Make sure FastAPI backend is running on port 8000.");
+
+        function showMessage(
+            text,
+            type = "error"
+        ) {
+
+            message.textContent = text;
+
+            message.className =
+                `auth-message ${type}`;
+        }
+
+
+        function loading(
+            button,
+            state
+        ) {
+
+            if (!button) return;
+
+            button.disabled = state;
+
+            if (state) {
+
+                button.dataset.original =
+                    button.innerHTML;
+
+                button.innerHTML =
+                    `<i class="fa-solid fa-circle-notch fa-spin"></i>
+                     Please wait...`;
+
+            } else {
+
+                button.innerHTML =
+                    button.dataset.original ||
+                    "Continue";
             }
-        });
-    }
-
-    // 2. Social Login Modal Triggers (Google / GitHub)
-    const authModal = document.getElementById("auth-modal");
-    const modalIcon = document.getElementById("modal-provider-icon");
-    const modalTitle = document.getElementById("modal-title");
-
-    document.getElementById("google-login")?.addEventListener("click", () => {
-        if(modalIcon) {
-            modalIcon.className = 'fab fa-google';
-            modalIcon.style.color = '#db4437';
         }
-        if(modalTitle) modalTitle.textContent = "Sign in with Google";
-        authModal?.classList.remove("hidden");
-    });
 
-    document.getElementById("github-login")?.addEventListener("click", () => {
-        if(modalIcon) {
-            modalIcon.className = 'fab fa-github';
-            modalIcon.style.color = '#333';
-        }
-        if(modalTitle) modalTitle.textContent = "Sign in with GitHub";
-        authModal?.classList.remove("hidden");
-    });
 
-    // 3. Phone Login Modal Trigger
-    document.getElementById("phone-login")?.addEventListener("click", () => {
-        document.getElementById("phone-modal")?.classList.remove("hidden");
-    });
-});
+        // EMAIL LOGIN
 
-// --- Modal Helper Functions ---
+        form?.addEventListener(
+            "submit",
+            async event => {
 
-function closeAuthModal() {
-    document.getElementById("auth-modal")?.classList.add("hidden");
-}
+                event.preventDefault();
 
-function selectAccount(email, name) {
-    localStorage.setItem("emergency_token", "oauth_mock_token_123");
-    localStorage.setItem("profileEmail", email);
-    localStorage.setItem("profileName", name);
-    window.location.href = "dashboard.html";
-}
+                const email =
+                    document.getElementById(
+                        "email"
+                    ).value.trim();
 
-function customAccountLogin() {
-    const customEmail = prompt("Enter the email address you want to use:");
-    if(customEmail && customEmail.includes('@')) {
-        const name = customEmail.split('@')[0];
-        selectAccount(customEmail, name);
-    } else if (customEmail) {
-        alert("Please enter a valid email!");
+                const password =
+                    document.getElementById(
+                        "password"
+                    ).value;
+
+
+                const button =
+                    document.getElementById(
+                        "login-submit"
+                    );
+
+
+                try {
+
+                    loading(button, true);
+
+                    await Auth.loginWithEmail(
+                        email,
+                        password
+                    );
+
+                    showMessage(
+                        "Login successful. Redirecting...",
+                        "success"
+                    );
+
+                    setTimeout(
+                        () => {
+                            window.location.href =
+                                "dashboard.html";
+                        },
+                        500
+                    );
+
+                } catch (error) {
+
+                    console.error(error);
+
+                    showMessage(
+                        getFirebaseError(
+                            error
+                        )
+                    );
+
+                    loading(button, false);
+                }
+            }
+        );
+
+
+        // GOOGLE
+
+        document
+            .getElementById(
+                "google-login"
+            )
+            ?.addEventListener(
+                "click",
+                async event => {
+
+                    const button =
+                        event.currentTarget;
+
+                    try {
+
+                        loading(button, true);
+
+                        await Auth.loginWithGoogle();
+
+                        window.location.href =
+                            "dashboard.html";
+
+                    } catch (error) {
+
+                        showMessage(
+                            getFirebaseError(
+                                error
+                            )
+                        );
+
+                        loading(button, false);
+                    }
+                }
+            );
+
+
+        // GITHUB
+
+        document
+            .getElementById(
+                "github-login"
+            )
+            ?.addEventListener(
+                "click",
+                async event => {
+
+                    const button =
+                        event.currentTarget;
+
+                    try {
+
+                        loading(button, true);
+
+                        await Auth.loginWithGithub();
+
+                        window.location.href =
+                            "dashboard.html";
+
+                    } catch (error) {
+
+                        showMessage(
+                            getFirebaseError(
+                                error
+                            )
+                        );
+
+                        loading(button, false);
+                    }
+                }
+            );
+
+
+        // PHONE MODAL
+
+        const phoneModal =
+            document.getElementById(
+                "phone-modal"
+            );
+
+
+        document
+            .getElementById(
+                "phone-login"
+            )
+            ?.addEventListener(
+                "click",
+                () => {
+
+                    phoneModal
+                        ?.classList
+                        .remove("hidden");
+                }
+            );
+
+
+        document
+            .getElementById(
+                "close-phone"
+            )
+            ?.addEventListener(
+                "click",
+                () => {
+
+                    phoneModal
+                        ?.classList
+                        .add("hidden");
+                }
+            );
+
+
+        // SEND OTP
+
+        document
+            .getElementById(
+                "send-otp"
+            )
+            ?.addEventListener(
+                "click",
+                async event => {
+
+                    const button =
+                        event.currentTarget;
+
+                    const phone =
+                        document
+                            .getElementById(
+                                "phone-input"
+                            )
+                            .value
+                            .trim();
+
+
+                    if (
+                        !/^\+\d{10,15}$/.test(
+                            phone
+                        )
+                    ) {
+
+                        alert(
+                            "Use international format, e.g. +919876543210"
+                        );
+
+                        return;
+                    }
+
+
+                    try {
+
+                        loading(button, true);
+
+                        await Auth.sendPhoneOTP(
+                            phone
+                        );
+
+                        document
+                            .getElementById(
+                                "otp-section"
+                            )
+                            .classList
+                            .remove("hidden");
+
+                        button.textContent =
+                            "OTP sent";
+
+                        button.disabled =
+                            true;
+
+                    } catch (error) {
+
+                        console.error(error);
+
+                        alert(
+                            getFirebaseError(
+                                error
+                            )
+                        );
+
+                        loading(
+                            button,
+                            false
+                        );
+                    }
+                }
+            );
+
+
+        // VERIFY OTP
+
+        document
+            .getElementById(
+                "verify-otp"
+            )
+            ?.addEventListener(
+                "click",
+                async event => {
+
+                    const button =
+                        event.currentTarget;
+
+                    const code =
+                        document
+                            .getElementById(
+                                "otp-input"
+                            )
+                            .value
+                            .trim();
+
+
+                    if (
+                        !/^\d{6}$/.test(
+                            code
+                        )
+                    ) {
+
+                        alert(
+                            "Enter the 6-digit OTP."
+                        );
+
+                        return;
+                    }
+
+
+                    try {
+
+                        loading(
+                            button,
+                            true
+                        );
+
+                        await Auth.verifyPhoneOTP(
+                            code
+                        );
+
+                        window.location.href =
+                            "dashboard.html";
+
+                    } catch (error) {
+
+                        alert(
+                            getFirebaseError(
+                                error
+                            )
+                        );
+
+                        loading(
+                            button,
+                            false
+                        );
+                    }
+                }
+            );
+
+
+        // FORGOT PASSWORD
+
+        const forgotModal =
+            document.getElementById(
+                "forgot-modal"
+            );
+
+
+        document
+            .getElementById(
+                "forgot-password"
+            )
+            ?.addEventListener(
+                "click",
+                () => {
+
+                    const email =
+                        document
+                            .getElementById(
+                                "email"
+                            )
+                            .value;
+
+                    document
+                        .getElementById(
+                            "reset-email"
+                        )
+                        .value = email;
+
+                    forgotModal
+                        ?.classList
+                        .remove("hidden");
+                }
+            );
+
+
+        document
+            .getElementById(
+                "close-forgot"
+            )
+            ?.addEventListener(
+                "click",
+                () => {
+
+                    forgotModal
+                        ?.classList
+                        .add("hidden");
+                }
+            );
+
+
+        document
+            .getElementById(
+                "send-reset"
+            )
+            ?.addEventListener(
+                "click",
+                async event => {
+
+                    const email =
+                        document
+                            .getElementById(
+                                "reset-email"
+                            )
+                            .value
+                            .trim();
+
+                    if (!email) {
+
+                        alert(
+                            "Enter your email address."
+                        );
+
+                        return;
+                    }
+
+
+                    try {
+
+                        loading(
+                            event.currentTarget,
+                            true
+                        );
+
+                        await Auth.forgotPassword(
+                            email
+                        );
+
+                        alert(
+                            "Password reset link sent. Check your email."
+                        );
+
+                        forgotModal
+                            ?.classList
+                            .add("hidden");
+
+                    } catch (error) {
+
+                        alert(
+                            getFirebaseError(
+                                error
+                            )
+                        );
+
+                    } finally {
+
+                        loading(
+                            event.currentTarget,
+                            false
+                        );
+                    }
+                }
+            );
+
+
+        // PASSWORD VISIBILITY
+
+        document
+            .querySelectorAll(
+                ".password-toggle"
+            )
+            .forEach(
+                button => {
+
+                    button.addEventListener(
+                        "click",
+                        () => {
+
+                            const target =
+                                document.getElementById(
+                                    button.dataset.target
+                                );
+
+                            if (
+                                target.type ===
+                                "password"
+                            ) {
+
+                                target.type =
+                                    "text";
+
+                                button.innerHTML =
+                                    `<i class="fa-regular fa-eye-slash"></i>`;
+
+                            } else {
+
+                                target.type =
+                                    "password";
+
+                                button.innerHTML =
+                                    `<i class="fa-regular fa-eye"></i>`;
+                            }
+                        }
+                    );
+                }
+            );
+
     }
+);
+
+
+// ======================================================
+// FIREBASE ERROR FORMATTER
+// ======================================================
+
+function getFirebaseError(error) {
+
+    const code =
+        error?.code || "";
+
+    const errors = {
+
+        "auth/invalid-credential":
+            "Email or password is incorrect.",
+
+        "auth/invalid-email":
+            "Please enter a valid email address.",
+
+        "auth/user-not-found":
+            "No account exists with this email.",
+
+        "auth/wrong-password":
+            "Incorrect password.",
+
+        "auth/email-already-in-use":
+            "An account already exists with this email.",
+
+        "auth/weak-password":
+            "Password should be at least 6 characters.",
+
+        "auth/popup-closed-by-user":
+            "Authentication window was closed.",
+
+        "auth/popup-blocked":
+            "Your browser blocked the authentication popup.",
+
+        "auth/account-exists-with-different-credential":
+            "An account already exists using another login method.",
+
+        "auth/invalid-verification-code":
+            "The OTP is incorrect.",
+
+        "auth/too-many-requests":
+            "Too many attempts. Please try again later."
+    };
+
+
+    return (
+        errors[code] ||
+        error?.message ||
+        "Authentication failed."
+    );
 }
 
-// --- Phone OTP Simulation Logic ---
-function sendOTP() {
-    const phone = document.getElementById("phone-input")?.value;
-    if(!phone || phone.length < 10) {
-        alert("Please enter a valid phone number!");
-        return;
-    }
-    
-    const otp = prompt(`An OTP has been sent to ${phone}.\nPlease enter the 4-digit OTP (hint: type 1234):`);
-    
-    if(otp === "1234") {
-        localStorage.setItem("emergency_token", "phone_auth_token");
-        localStorage.setItem("profileEmail", phone + "@phone.auth");
-        localStorage.setItem("profileName", "Phone User");
-        
-        alert("Phone verification successful!");
-        window.location.href = "dashboard.html";
-    } else {
-        alert("Invalid OTP! Try again.");
-    }
-}
+
+window.getFirebaseError =
+    getFirebaseError;

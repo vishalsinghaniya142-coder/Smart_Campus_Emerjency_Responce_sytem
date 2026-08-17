@@ -118,7 +118,7 @@ async def report_incident(
     # --------------------------------------------------------
 
     reporter_id = current_user.get(
-        "user_id"
+        "id"
     )
 
     if not reporter_id:
@@ -265,7 +265,7 @@ async def get_incidents(
     # --------------------------------------------------------
 
     user_id = current_user.get(
-        "user_id"
+        "id"
     )
 
     if not user_id:
@@ -365,7 +365,7 @@ async def get_incident_by_id(
     # --------------------------------------------------------
 
     user_id = current_user.get(
-        "user_id"
+        "id"
     )
 
     if not user_id:
@@ -481,7 +481,7 @@ async def update_incident_route(
     # --------------------------------------------------------
 
     user_id = current_user.get(
-        "user_id"
+        "id"
     )
 
     if not user_id:
@@ -606,7 +606,7 @@ async def delete_incident_route(
     # --------------------------------------------------------
 
     user_id = current_user.get(
-        "user_id"
+        "id"
     )
 
     if not user_id:

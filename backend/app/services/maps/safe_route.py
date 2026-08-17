@@ -11,8 +11,12 @@ def get_safe_route(
     Get a route and return basic safety information.
 
     For now, the route is considered safe by default.
-    Later, this function will check active incidents,
-    blocked roads and emergency zones.
+
+    Later this function can check:
+        - active incidents
+        - blocked roads
+        - emergency zones
+        - dangerous areas
     """
 
     route = get_route(

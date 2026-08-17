@@ -90,7 +90,7 @@ async def get_profile(
     # --------------------------------------------------------
 
     user_id = current_user.get(
-        "user_id"
+        "id"
     )
 
     if not user_id:
@@ -158,7 +158,7 @@ async def get_current_user_info(
     """
 
     user_id = current_user.get(
-        "user_id"
+        "id"
     )
 
     email = current_user.get(
@@ -226,7 +226,7 @@ async def update_profile(
     # --------------------------------------------------------
 
     user_id = current_user.get(
-        "user_id"
+        "id"
     )
 
     if not user_id:

@@ -26,7 +26,29 @@ from app.routes.chatbot import router as chatbot_router
 from app.routes.image_analysis import (
     router as image_analysis_router,
 )
+from app.routes.maps import router as maps_router
+from app.services.incident_service import (
+    configure_incident_repository,
+)
 
+from app.services.database.incidents import (
+    FirebaseIncidentRepository,
+)
+
+from app.services.alert_service import (
+    configure_alert_repository,
+)
+
+from app.services.database.alerts import (
+    FirebaseAlertRepository,
+)
+from app.services.sos_service import (
+    configure_sos_repository,
+)
+
+from app.services.database.sos import (
+    FirebaseSOSRepository,
+)
 
 # ============================================================
 # APPLICATION CONSTANTS
@@ -132,6 +154,29 @@ async def lifespan(app: FastAPI):
                         )
 
         print("Firebase user repository configured.")
+
+        incident_repository = FirebaseIncidentRepository()
+
+        configure_incident_repository(
+        incident_repository
+                )
+
+        print("Firebase incident repository configured.")
+
+        alert_repository = FirebaseAlertRepository()
+
+        configure_alert_repository(
+          alert_repository
+        )
+
+        print("Firebase alert repository configured.")
+        sos_repository = FirebaseSOSRepository()
+
+        configure_sos_repository(
+            sos_repository
+        )
+
+        print("Firebase SOS repository configured.")
 
     except Exception as exc:
         print(
@@ -418,6 +463,11 @@ app.include_router(
     tags=["Image Analysis"],
 )
 
+app.include_router(
+    maps_router,
+    prefix="/maps",
+    tags=["Maps"],
+)
 
 # ============================================================
 # ROOT ENDPOINT

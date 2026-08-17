@@ -90,7 +90,7 @@ async def create_alert_route(
     # --------------------------------------------------------
 
     creator_id = current_user.get(
-        "user_id"
+        "id"
     )
 
     if not creator_id:
@@ -231,7 +231,7 @@ async def get_alerts(
     # --------------------------------------------------------
 
     user_id = current_user.get(
-        "user_id"
+        "id"
     )
 
     if not user_id:
@@ -337,7 +337,7 @@ async def get_alert_by_id(
     # --------------------------------------------------------
 
     user_id = current_user.get(
-        "user_id"
+        "id"
     )
 
     if not user_id:
@@ -454,7 +454,7 @@ async def update_alert_route(
     # --------------------------------------------------------
 
     requester_id = current_user.get(
-        "user_id"
+        "id"
     )
 
     if not requester_id:
@@ -568,7 +568,7 @@ async def activate_alert_route(
     """
 
     requester_id = current_user.get(
-        "user_id"
+        "id"
     )
 
     if not requester_id:
@@ -658,7 +658,7 @@ async def cancel_alert_route(
     """
 
     requester_id = current_user.get(
-        "user_id"
+        "id"
     )
 
     if not requester_id:
@@ -751,7 +751,7 @@ async def delete_alert_route(
     """
 
     requester_id = current_user.get(
-        "user_id"
+        "id"
     )
 
     if not requester_id:

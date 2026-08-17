@@ -1,29 +1,126 @@
+from typing import Any, Dict, List, Optional
+
+from app.models.sos import (
+    SOS,
+    sos_from_document,
+    sos_to_document,
+)
 from app.services.database.firebase_client import db
 
 
 SOS_COLLECTION = "sos"
 
 
-def create_sos(sos_id, data):
-    """Create a new SOS request in Firestore."""
+class FirebaseSOSRepository:
+    """
+    Firebase Firestore repository for SOS operations.
+    """
 
-    db.collection(SOS_COLLECTION).document(sos_id).set(data)
+    async def create_sos(
+        self,
+        sos: SOS,
+    ) -> SOS:
+        data = sos_to_document(sos)
 
-    return {
-        "id": sos_id,
-        **data
-    }
+        db.collection(
+            SOS_COLLECTION
+        ).document(
+            sos.id
+        ).set(data)
+
+        return sos
 
 
-def get_sos(sos_id):
-    """Get an SOS request from Firestore."""
+    async def get_sos_by_id(
+        self,
+        sos_id: str,
+    ) -> Optional[SOS]:
 
-    doc = db.collection(SOS_COLLECTION).document(sos_id).get()
+        document = (
+            db.collection(
+                SOS_COLLECTION
+            )
+            .document(
+                sos_id
+            )
+            .get()
+        )
 
-    if not doc.exists:
-        return None
+        if not document.exists:
+            return None
 
-    return {
-        "id": doc.id,
-        **doc.to_dict()
-    }
+        data = document.to_dict()
+
+        data["id"] = document.id
+
+        return sos_from_document(data)
+
+
+    async def list_sos_by_user(
+        self,
+        user_id: str,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> List[SOS]:
+
+        documents = (
+            db.collection(
+                SOS_COLLECTION
+            )
+            .where(
+                "user_id",
+                "==",
+                user_id,
+            )
+            .stream()
+        )
+
+        sos_list = []
+
+        for document in documents:
+            data = document.to_dict()
+
+            data["id"] = document.id
+
+            try:
+                sos = sos_from_document(data)
+                sos_list.append(sos)
+            except Exception:
+                # Ignore old/incompatible SOS documents.
+                continue
+
+        return sos_list[
+            offset: offset + limit
+        ]
+
+
+    async def update_sos(
+        self,
+        sos_id: str,
+        updates: Dict[str, Any],
+    ) -> Optional[SOS]:
+
+        document = (
+            db.collection(
+                SOS_COLLECTION
+            )
+            .document(
+                sos_id
+            )
+            .get()
+        )
+
+        if not document.exists:
+            return None
+
+        db.collection(
+            SOS_COLLECTION
+        ).document(
+            sos_id
+        ).update(
+            updates
+        )
+
+        return await self.get_sos_by_id(
+            sos_id
+        )

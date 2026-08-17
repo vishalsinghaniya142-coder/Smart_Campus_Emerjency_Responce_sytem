@@ -56,10 +56,21 @@ def get_route(
     if data.get("code") != "Ok":
         return None
 
-    route = data["routes"][0]
+    routes = data.get("routes", [])
+
+    if not routes:
+        return None
+
+    route = routes[0]
 
     return {
-        "distance_km": round(route["distance"] / 1000, 2),
-        "duration_minutes": round(route["duration"] / 60, 2),
+        "distance_km": round(
+            route["distance"] / 1000,
+            2,
+        ),
+        "duration_minutes": round(
+            route["duration"] / 60,
+            2,
+        ),
         "geometry": route["geometry"]["coordinates"],
     }

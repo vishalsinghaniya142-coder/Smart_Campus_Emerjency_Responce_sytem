@@ -1,153 +1,417 @@
-// js/report.js
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
 
-document.addEventListener("DOMContentLoaded", () => {
+        const form =
+            document.getElementById(
+                "register-form"
+            );
 
-    const form = document.querySelector("form");
-
-    if (!form) {
-        return;
-    }
-
-
-    form.addEventListener("submit", async (e) => {
-
-        e.preventDefault();
-
-
-        // ========================================================
-        // GET FORM DATA
-        // ========================================================
-
-        const incidentType =
-            document.getElementById("incident-type").value.trim();
-
-        const location =
-            document.getElementById("incident-location").value.trim();
-
-        const description =
-            document.getElementById("incident-description").value.trim();
+        const message =
+            document.getElementById(
+                "auth-message"
+            );
 
 
-        // ========================================================
-        // BASIC VALIDATION
-        // ========================================================
+        function loading(
+            button,
+            state
+        ) {
 
-        if (!incidentType) {
-            alert("Please select the type of emergency.");
-            return;
-        }
+            if (!button) return;
 
-        if (!location) {
-            alert("Please enter the emergency location.");
-            return;
-        }
+            button.disabled = state;
 
-        if (!description) {
-            alert("Please enter a description of the emergency.");
-            return;
-        }
+            if (state) {
 
+                button.dataset.original =
+                    button.innerHTML;
 
-        // ========================================================
-        // AUTHENTICATION CHECK
-        // ========================================================
+                button.innerHTML =
+                    `<i class="fa-solid fa-circle-notch fa-spin"></i>
+                     Creating account...`;
 
-        const token =
-            localStorage.getItem("emergency_token");
+            } else {
 
-        if (!token) {
-
-            alert("Please login first to submit an emergency report.");
-
-            window.location.href = "login.html";
-
-            return;
-        }
-
-
-        // ========================================================
-        // SUBMIT BUTTON
-        // ========================================================
-
-        const submitBtn =
-            form.querySelector("button[type='submit']");
-
-
-        try {
-
-            if (submitBtn) {
-
-                submitBtn.disabled = true;
-
-                submitBtn.innerHTML =
-                    '<i class="fas fa-spinner fa-spin"></i> Submitting...';
-
+                button.innerHTML =
+                    button.dataset.original ||
+                    "Create account";
             }
+        }
 
 
-            // ====================================================
-            // MEMBER 2 FASTAPI BACKEND
-            // POST /incidents
-            // ====================================================
+        function showMessage(
+            text,
+            type = "error"
+        ) {
 
-            const response =
-                await API.request(
-                    "/incidents",
-                    "POST",
-                    {
-                        incident_type: incidentType,
-                        title: incidentType,
-                        description: description,
-                        location: location
+            message.textContent = text;
+
+            message.className =
+                `auth-message ${type}`;
+        }
+
+
+        // EMAIL REGISTER
+
+        form?.addEventListener(
+            "submit",
+            async event => {
+
+                event.preventDefault();
+
+                const name =
+                    document.getElementById(
+                        "name"
+                    ).value.trim();
+
+                const email =
+                    document.getElementById(
+                        "email"
+                    ).value.trim();
+
+                const password =
+                    document.getElementById(
+                        "password"
+                    ).value;
+
+
+                const button =
+                    document.getElementById(
+                        "register-submit"
+                    );
+
+
+                if (
+                    password.length < 8
+                ) {
+
+                    showMessage(
+                        "Password must contain at least 8 characters."
+                    );
+
+                    return;
+                }
+
+
+                try {
+
+                    loading(
+                        button,
+                        true
+                    );
+
+                    await Auth.registerWithEmail(
+                        name,
+                        email,
+                        password
+                    );
+
+                    showMessage(
+                        "Account created successfully!",
+                        "success"
+                    );
+
+                    setTimeout(
+                        () => {
+
+                            window.location.href =
+                                "dashboard.html";
+
+                        },
+                        700
+                    );
+
+                } catch (error) {
+
+                    console.error(error);
+
+                    showMessage(
+                        getFirebaseError(
+                            error
+                        )
+                    );
+
+                    loading(
+                        button,
+                        false
+                    );
+                }
+            }
+        );
+
+
+        // GOOGLE
+
+        document
+            .getElementById(
+                "google-register"
+            )
+            ?.addEventListener(
+                "click",
+                async event => {
+
+                    try {
+
+                        loading(
+                            event.currentTarget,
+                            true
+                        );
+
+                        await Auth.loginWithGoogle();
+
+                        window.location.href =
+                            "dashboard.html";
+
+                    } catch (error) {
+
+                        showMessage(
+                            getFirebaseError(
+                                error
+                            )
+                        );
+
+                        loading(
+                            event.currentTarget,
+                            false
+                        );
                     }
-                );
-
-
-            console.log(
-                "Incident report response:",
-                response
+                }
             );
 
 
-            // ====================================================
-            // SUCCESS
-            // ====================================================
+        // GITHUB
 
-            alert(
-                "Emergency report submitted successfully. Authorities have been notified."
+        document
+            .getElementById(
+                "github-register"
+            )
+            ?.addEventListener(
+                "click",
+                async event => {
+
+                    try {
+
+                        loading(
+                            event.currentTarget,
+                            true
+                        );
+
+                        await Auth.loginWithGithub();
+
+                        window.location.href =
+                            "dashboard.html";
+
+                    } catch (error) {
+
+                        showMessage(
+                            getFirebaseError(
+                                error
+                            )
+                        );
+
+                        loading(
+                            event.currentTarget,
+                            false
+                        );
+                    }
+                }
             );
 
 
-            form.reset();
+        // PHONE
 
-
-        } catch (error) {
-
-            console.error(
-                "Incident report error:",
-                error
+        const modal =
+            document.getElementById(
+                "phone-modal"
             );
 
 
-            alert(
-                error.message ||
-                "Unable to submit emergency report. Please try again."
+        document
+            .getElementById(
+                "phone-register"
+            )
+            ?.addEventListener(
+                "click",
+                () => {
+
+                    modal
+                        ?.classList
+                        .remove("hidden");
+                }
             );
 
 
-        } finally {
+        document
+            .getElementById(
+                "close-phone"
+            )
+            ?.addEventListener(
+                "click",
+                () => {
 
-            if (submitBtn) {
+                    modal
+                        ?.classList
+                        .add("hidden");
+                }
+            );
 
-                submitBtn.disabled = false;
 
-                submitBtn.innerHTML =
-                    "Submit Report";
+        document
+            .getElementById(
+                "send-otp"
+            )
+            ?.addEventListener(
+                "click",
+                async event => {
 
-            }
+                    const phone =
+                        document
+                            .getElementById(
+                                "phone-input"
+                            )
+                            .value
+                            .trim();
 
-        }
 
-    });
+                    if (
+                        !/^\+\d{10,15}$/.test(
+                            phone
+                        )
+                    ) {
 
-});
+                        alert(
+                            "Use international format, e.g. +919876543210"
+                        );
+
+                        return;
+                    }
+
+
+                    try {
+
+                        await Auth.sendPhoneOTP(
+                            phone
+                        );
+
+                        document
+                            .getElementById(
+                                "otp-section"
+                            )
+                            .classList
+                            .remove("hidden");
+
+                        event.currentTarget.disabled =
+                            true;
+
+                        event.currentTarget.textContent =
+                            "OTP sent";
+
+                    } catch (error) {
+
+                        alert(
+                            getFirebaseError(
+                                error
+                            )
+                        );
+                    }
+                }
+            );
+
+
+        document
+            .getElementById(
+                "verify-otp"
+            )
+            ?.addEventListener(
+                "click",
+                async event => {
+
+                    const code =
+                        document
+                            .getElementById(
+                                "otp-input"
+                            )
+                            .value
+                            .trim();
+
+
+                    if (
+                        !/^\d{6}$/.test(
+                            code
+                        )
+                    ) {
+
+                        alert(
+                            "Enter the 6-digit OTP."
+                        );
+
+                        return;
+                    }
+
+
+                    try {
+
+                        await Auth.verifyPhoneOTP(
+                            code
+                        );
+
+                        window.location.href =
+                            "dashboard.html";
+
+                    } catch (error) {
+
+                        alert(
+                            getFirebaseError(
+                                error
+                            )
+                        );
+                    }
+                }
+            );
+
+
+        // PASSWORD VISIBILITY
+
+        document
+            .querySelectorAll(
+                ".password-toggle"
+            )
+            .forEach(
+                button => {
+
+                    button.addEventListener(
+                        "click",
+                        () => {
+
+                            const input =
+                                document.getElementById(
+                                    button.dataset.target
+                                );
+
+                            if (
+                                input.type ===
+                                "password"
+                            ) {
+
+                                input.type =
+                                    "text";
+
+                                button.innerHTML =
+                                    `<i class="fa-regular fa-eye-slash"></i>`;
+
+                            } else {
+
+                                input.type =
+                                    "password";
+
+                                button.innerHTML =
+                                    `<i class="fa-regular fa-eye"></i>`;
+                            }
+                        }
+                    );
+                }
+            );
+
+    }
+);

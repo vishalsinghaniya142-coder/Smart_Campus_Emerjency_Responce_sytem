@@ -2,532 +2,474 @@
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Login - SafeGuard</title>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/login.css">
-    <link rel="stylesheet" href="css/navbar.css">
+    <title>Sign In | SafeGuard</title>
 
     <link
         rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+        href="css/style.css"
     >
+
+    <link
+        rel="stylesheet"
+        href="css/login.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    >
+
 </head>
 
-<body class="auth-bg">
 
-    <!-- =====================================================
-         NAVBAR
-    ====================================================== -->
-
-    <div
-        id="navbar-placeholder"
-        style="position: absolute; top: 0; width: 100%;"
-    ></div>
+<body class="auth-page">
 
 
-    <!-- =====================================================
-         LOGIN CONTAINER
-    ====================================================== -->
-
-    <div class="container form-container glass-effect">
-
-        <h2>Welcome Back</h2>
-
-        <p class="auth-subtitle">
-            Login to your SafeGuard account
-        </p>
+<div class="auth-shell">
 
 
-        <!-- =================================================
-             NORMAL LOGIN FORM
-        ================================================== -->
+    <!-- LEFT SIDE -->
 
-        <form id="login-form">
+    <section class="auth-visual">
 
-            <div class="form-group">
+        <a
+            href="index.html"
+            class="auth-brand"
+        >
 
-                <label for="email">
-                    Email Address
-                </label>
+            <img
+                src="images/logo.svg"
+                alt="SafeGuard"
+            >
 
-                <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    required
-                    autocomplete="email"
-                    placeholder="Enter your email"
-                >
+            <span>SafeGuard</span>
+
+        </a>
+
+
+        <div class="visual-content">
+
+            <span class="eyebrow">
+                <i class="fa-solid fa-shield-halved"></i>
+                SMART CAMPUS SECURITY
+            </span>
+
+
+            <h1>
+                One platform.
+                <span>Every emergency.</span>
+            </h1>
+
+
+            <p>
+                Stay connected to campus safety,
+                AI-powered emergency intelligence,
+                live alerts and rapid response.
+            </p>
+
+
+            <div class="trust-row">
+
+                <div>
+                    <strong>24/7</strong>
+                    <span>Monitoring</span>
+                </div>
+
+                <div>
+                    <strong>AI</strong>
+                    <span>Powered</span>
+                </div>
+
+                <div>
+                    <strong>GPS</strong>
+                    <span>Response</span>
+                </div>
 
             </div>
-
-
-            <div class="form-group">
-
-                <label for="password">
-                    Password
-                </label>
-
-                <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    required
-                    autocomplete="current-password"
-                    placeholder="Enter your password"
-                >
-
-            </div>
-
-
-            <!-- =================================================
-                 FORGOT PASSWORD LINK
-            ================================================== -->
-
-            <div
-                style="
-                    text-align: right;
-                    margin-bottom: 1rem;
-                "
-            >
-
-                <a
-                    href="#"
-                    id="forgot-pwd-link"
-                    style="
-                        color: var(--primary-color);
-                        font-size: 0.85rem;
-                        text-decoration: none;
-                        font-weight: 600;
-                    "
-                >
-                    Forgot Password?
-                </a>
-
-            </div>
-
-
-            <!-- =================================================
-                 LOGIN BUTTON
-            ================================================== -->
-
-            <button
-                type="submit"
-                class="btn btn-primary w-100"
-            >
-                Login
-            </button>
-
-        </form>
-
-
-        <!-- =================================================
-             DIVIDER
-        ================================================== -->
-
-        <div class="auth-divider">
-            <span>OR</span>
-        </div>
-
-
-        <!-- =================================================
-             SOCIAL LOGIN
-        ================================================== -->
-
-        <div class="social-login">
-
-            <!-- GOOGLE LOGIN -->
-
-            <button
-                type="button"
-                class="btn btn-outline social-btn"
-                id="google-login"
-            >
-
-                <i
-                    class="fab fa-google"
-                    style="color: #db4437;"
-                ></i>
-
-                Continue with Google
-
-            </button>
-
-
-            <!-- GITHUB LOGIN -->
-
-            <button
-                type="button"
-                class="btn btn-outline social-btn"
-                id="github-login"
-            >
-
-                <i
-                    class="fab fa-github"
-                    style="color: #333;"
-                ></i>
-
-                Continue with GitHub
-
-            </button>
-
-
-            <!-- PHONE LOGIN -->
-
-            <button
-                type="button"
-                class="btn btn-outline social-btn"
-                id="phone-login"
-            >
-
-                <i
-                    class="fas fa-phone-alt"
-                    style="color: #16a34a;"
-                ></i>
-
-                Continue with Phone
-
-            </button>
 
         </div>
 
 
-        <!-- =================================================
-             REGISTER LINK
-        ================================================== -->
+        <div class="visual-footer">
+            <i class="fa-solid fa-lock"></i>
+            Secure authentication powered by Firebase
+        </div>
 
-        <p class="auth-footer">
-
-            New user?
-
-            <a href="register.html">
-                Create an account
-            </a>
-
-        </p>
-
-    </div>
+    </section>
 
 
-    <!-- =====================================================
-         GOOGLE / GITHUB ACCOUNT CHOOSER MODAL
-    ====================================================== -->
+    <!-- RIGHT SIDE -->
 
-    <div
-        id="auth-modal"
-        class="custom-modal hidden"
-    >
+    <section class="auth-panel">
 
-        <div class="modal-content">
+        <div class="auth-card">
 
 
-            <!-- MODAL HEADER -->
+            <div class="mobile-brand">
 
-            <div class="modal-header">
-
-                <i
-                    id="modal-provider-icon"
-                    class="fab fa-google"
-                    style="
-                        font-size: 2rem;
-                        color: #db4437;
-                        margin-bottom: 10px;
-                    "
-                ></i>
-
-
-                <h3
-                    id="modal-title"
-                    style="margin-bottom: 5px;"
+                <img
+                    src="images/logo.svg"
+                    alt="SafeGuard"
                 >
-                    Sign in
-                </h3>
+
+                <strong>SafeGuard</strong>
+
+            </div>
 
 
-                <p
-                    style="
-                        color: var(--text-light);
-                        margin-bottom: 20px;
-                    "
-                >
-                    Choose an account to continue
+            <div class="auth-heading">
+
+                <span class="small-label">
+                    WELCOME BACK
+                </span>
+
+                <h2>
+                    Sign in to your account
+                </h2>
+
+                <p>
+                    Access your campus safety dashboard.
                 </p>
 
             </div>
 
 
-            <!-- =================================================
-                 ACCOUNT LIST
-            ================================================== -->
+            <!-- SOCIAL -->
 
-            <div class="account-list">
+            <div class="social-grid">
 
-
-                <!-- DEMO ACCOUNT -->
-
-                <div
-                    class="account-item"
-                    onclick="
-                        selectAccount(
-                            'virat@example.com',
-                            'Virat Saini'
-                        )
-                    "
+                <button
+                    class="social-button"
+                    id="google-login"
+                    type="button"
                 >
 
-                    <div
-                        class="acc-avatar"
-                        style="background: #2563eb;"
-                    >
-                        V
-                    </div>
+                    <i class="fa-brands fa-google"></i>
+
+                    <span>Google</span>
+
+                </button>
 
 
-                    <div class="acc-info">
-
-                        <strong>
-                            Virat Saini
-                        </strong>
-
-                        <span>
-                            virat@example.com
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-                <!-- =================================================
-                     USE ANOTHER ACCOUNT
-                ================================================== -->
-
-                <div
-                    class="account-item"
-                    onclick="customAccountLogin()"
+                <button
+                    class="social-button"
+                    id="github-login"
+                    type="button"
                 >
 
-                    <div
-                        class="acc-avatar"
-                        style="
-                            background: #f1f5f9;
-                            color: #333;
-                        "
-                    >
+                    <i class="fa-brands fa-github"></i>
 
-                        <i class="fas fa-user-plus"></i>
+                    <span>GitHub</span>
 
-                    </div>
-
-
-                    <div class="acc-info">
-
-                        <strong style="color: #333;">
-                            Use another account
-                        </strong>
-
-                        <span>
-                            Sign in with a different email
-                        </span>
-
-                    </div>
-
-                </div>
+                </button>
 
             </div>
 
 
-            <!-- CANCEL BUTTON -->
+            <div class="or-divider">
+                <span>or continue with email</span>
+            </div>
+
+
+            <!-- EMAIL LOGIN -->
+
+            <form id="login-form">
+
+
+                <div class="input-group">
+
+                    <label>Email address</label>
+
+                    <div class="input-wrapper">
+
+                        <i class="fa-regular fa-envelope"></i>
+
+                        <input
+                            type="email"
+                            id="email"
+                            placeholder="you@example.com"
+                            required
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <div class="input-group">
+
+                    <div class="label-row">
+
+                        <label>Password</label>
+
+                        <button
+                            type="button"
+                            id="forgot-password"
+                            class="text-button"
+                        >
+                            Forgot password?
+                        </button>
+
+                    </div>
+
+
+                    <div class="input-wrapper">
+
+                        <i class="fa-solid fa-lock"></i>
+
+                        <input
+                            type="password"
+                            id="password"
+                            placeholder="Enter your password"
+                            required
+                        >
+
+                        <button
+                            type="button"
+                            class="password-toggle"
+                            data-target="password"
+                        >
+                            <i class="fa-regular fa-eye"></i>
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <button
+                    type="submit"
+                    class="auth-submit"
+                    id="login-submit"
+                >
+
+                    <span>Sign in</span>
+
+                    <i class="fa-solid fa-arrow-right"></i>
+
+                </button>
+
+
+            </form>
+
+
+            <div class="or-divider">
+                <span>or use your phone</span>
+            </div>
+
 
             <button
                 type="button"
-                class="btn btn-outline w-100"
-                style="margin-top: 15px;"
-                onclick="closeAuthModal()"
+                class="phone-button"
+                id="phone-login"
             >
-                Cancel
+
+                <i class="fa-solid fa-mobile-screen-button"></i>
+
+                Continue with phone
+
             </button>
 
-        </div>
 
-    </div>
+            <p class="auth-bottom">
 
+                Don't have an account?
 
-    <!-- =====================================================
-         PHONE NUMBER OTP MODAL
-    ====================================================== -->
+                <a href="register.html">
+                    Create one
+                </a>
 
-    <div
-        id="phone-modal"
-        class="custom-modal hidden"
-    >
-
-        <div class="modal-content">
-
-
-            <h3
-                style="
-                    margin-bottom: 10px;
-                    color: var(--text-dark);
-                "
-            >
-
-                <i
-                    class="fas fa-mobile-alt"
-                    style="color: #16a34a;"
-                ></i>
-
-                Phone Login
-
-            </h3>
-
-
-            <p
-                style="
-                    color: #64748b;
-                    margin-bottom: 20px;
-                    font-size: 0.9rem;
-                "
-            >
-                Enter your phone number to receive an OTP.
             </p>
 
 
-            <!-- PHONE INPUT -->
+            <div
+                id="auth-message"
+                class="auth-message"
+            ></div>
+
+
+        </div>
+
+    </section>
+
+</div>
+
+
+<!-- PHONE MODAL -->
+
+<div
+    class="modal hidden"
+    id="phone-modal"
+>
+
+    <div class="modal-card">
+
+        <button
+            class="modal-close"
+            id="close-phone"
+        >
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+
+        <div class="modal-icon phone-icon">
+
+            <i class="fa-solid fa-mobile-screen-button"></i>
+
+        </div>
+
+
+        <h3>
+            Sign in with phone
+        </h3>
+
+        <p>
+            We'll send a verification code to your phone.
+        </p>
+
+
+        <div class="input-group">
+
+            <label>Phone number</label>
 
             <input
                 type="tel"
                 id="phone-input"
-                class="modal-input"
                 placeholder="+91 9876543210"
-                autocomplete="tel"
             >
 
+        </div>
 
-            <!-- SEND OTP -->
+
+        <button
+            class="auth-submit"
+            id="send-otp"
+        >
+
+            Send verification code
+
+        </button>
+
+
+        <div
+            class="otp-section hidden"
+            id="otp-section"
+        >
+
+            <div class="input-group">
+
+                <label>Verification code</label>
+
+                <input
+                    type="text"
+                    id="otp-input"
+                    maxlength="6"
+                    inputmode="numeric"
+                    placeholder="Enter 6-digit OTP"
+                >
+
+            </div>
+
 
             <button
-                type="button"
-                class="btn btn-primary w-100"
-                style="
-                    margin-bottom: 10px;
-                    background: #16a34a;
-                "
-                onclick="sendOTP()"
+                class="auth-submit"
+                id="verify-otp"
             >
-                Send OTP
-            </button>
 
+                Verify & continue
 
-            <!-- CANCEL -->
-
-            <button
-                type="button"
-                class="btn btn-outline w-100"
-                onclick="
-                    document
-                        .getElementById('phone-modal')
-                        .classList
-                        .add('hidden')
-                "
-            >
-                Cancel
             </button>
 
         </div>
 
+
+        <div id="recaptcha-container"></div>
+
     </div>
 
-
-    <!-- =====================================================
-         FORGOT PASSWORD MODAL
-    ====================================================== -->
-
-    <div
-        id="forgot-modal"
-        class="custom-modal hidden"
-    >
-
-        <div class="modal-content">
+</div>
 
 
-            <h3
-                style="
-                    margin-bottom: 10px;
-                    color: var(--text-dark);
-                "
-            >
-                Reset Password
-            </h3>
+<!-- FORGOT PASSWORD MODAL -->
+
+<div
+    class="modal hidden"
+    id="forgot-modal"
+>
+
+    <div class="modal-card">
+
+        <button
+            class="modal-close"
+            id="close-forgot"
+        >
+            <i class="fa-solid fa-xmark"></i>
+        </button>
 
 
-            <p
-                style="
-                    color: #64748b;
-                    margin-bottom: 20px;
-                    font-size: 0.9rem;
-                "
-            >
-                Enter your email address and we'll send you
-                a link to reset your password.
-            </p>
+        <div class="modal-icon reset-icon">
+
+            <i class="fa-solid fa-key"></i>
+
+        </div>
 
 
-            <!-- RESET EMAIL -->
+        <h3>
+            Reset your password
+        </h3>
+
+        <p>
+            Enter your email and we'll send
+            you a secure password reset link.
+        </p>
+
+
+        <div class="input-group">
+
+            <label>Email address</label>
 
             <input
                 type="email"
                 id="reset-email"
-                class="modal-input"
-                placeholder="virat@example.com"
-                autocomplete="email"
+                placeholder="you@example.com"
             >
-
-
-            <!-- SEND RESET LINK -->
-
-            <button
-                type="button"
-                class="btn btn-primary w-100"
-                style="margin-bottom: 10px;"
-                onclick="sendResetLink()"
-            >
-                Send Reset Link
-            </button>
-
-
-            <!-- CLOSE -->
-
-            <button
-                type="button"
-                class="btn btn-outline w-100"
-                onclick="closeForgotModal()"
-            >
-                Close
-            </button>
 
         </div>
 
+
+        <button
+            class="auth-submit"
+            id="send-reset"
+        >
+
+            Send reset link
+
+        </button>
+
     </div>
 
+</div>
 
-    <!-- =====================================================
-         JAVASCRIPT
-         
-         IMPORTANT ORDER:
-         
-         1. api.js
-         2. main.js
-         3. login.js
-    ====================================================== -->
 
-    <script src="js/api.js"></script>
-    <script src="js/main.js"></script>
-    <script src="js/login.js"></script>
+<script src="js/api.js"></script>
+
+<script
+    type="module"
+    src="js/auth.js"
+></script>
+
+<script
+    src="js/login.js"
+    defer
+></script>
 
 </body>
 

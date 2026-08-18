@@ -1,206 +1,587 @@
-// js/login.js
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
 
-// --- 1. Normal Login Form Handling ---
-document.addEventListener("DOMContentLoaded", () => {
-    const loginForm = document.getElementById("login-form");
+        const form =
+            document.getElementById(
+                "login-form"
+            );
 
-    if (loginForm) {
-        loginForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
+        const message =
+            document.getElementById(
+                "auth-message"
+            );
 
-            const email =
-                document.getElementById("email").value.trim();
 
-            const password =
-                document.getElementById("password").value;
+        function showMessage(
+            text,
+            type = "error"
+        ) {
 
-            const btn =
-                loginForm.querySelector(
-                    "button[type='submit']"
-                );
+            message.textContent = text;
 
-            try {
-                btn.disabled = true;
-                btn.innerHTML =
-                    '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+            message.className =
+                `auth-message ${type}`;
+        }
 
-                // Real FastAPI backend call
-                const response = await API.request(
-                    "/auth/login",
-                    "POST",
-                    {
-                        email: email,
-                        password: password
-                    }
-                );
 
-                // Backend response se token nikalo
-                const data = response.data || response;
+        function loading(
+            button,
+            state
+        ) {
 
-                const token =
-                    data.access_token ||
-                    data.token;
+            if (!button) return;
 
-                if (!token) {
-                    throw new Error(
-                        "Login successful but access token was not received."
+            button.disabled = state;
+
+            if (state) {
+
+                button.dataset.original =
+                    button.innerHTML;
+
+                button.innerHTML =
+                    `<i class="fa-solid fa-circle-notch fa-spin"></i>
+                     Please wait...`;
+
+            } else {
+
+                button.innerHTML =
+                    button.dataset.original ||
+                    "Continue";
+            }
+        }
+
+
+        // EMAIL LOGIN
+
+        form?.addEventListener(
+            "submit",
+            async event => {
+
+                event.preventDefault();
+
+                const email =
+                    document.getElementById(
+                        "email"
+                    ).value.trim();
+
+                const password =
+                    document.getElementById(
+                        "password"
+                    ).value;
+
+
+                const button =
+                    document.getElementById(
+                        "login-submit"
                     );
+
+
+                try {
+
+                    loading(button, true);
+
+                    await Auth.loginWithEmail(
+                        email,
+                        password
+                    );
+
+                    showMessage(
+                        "Login successful. Redirecting...",
+                        "success"
+                    );
+
+                    setTimeout(
+                        () => {
+                            window.location.href =
+                                "dashboard.html";
+                        },
+                        500
+                    );
+
+                } catch (error) {
+
+                    console.error(error);
+
+                    showMessage(
+                        getFirebaseError(
+                            error
+                        )
+                    );
+
+                    loading(button, false);
                 }
+            }
+        );
 
-                // Save authentication data
-                localStorage.setItem(
-                    "emergency_token",
-                    token
-                );
 
-                if (data.user) {
-                    localStorage.setItem(
-                        "profileEmail",
-                        data.user.email || email
-                    );
+        // GOOGLE
 
-                    localStorage.setItem(
-                        "profileName",
-                        data.user.name ||
-                        email.split("@")[0]
-                    );
+        document
+            .getElementById(
+                "google-login"
+            )
+            ?.addEventListener(
+                "click",
+                async event => {
 
-                    if (data.user.role) {
-                        localStorage.setItem(
-                            "userRole",
-                            data.user.role
+                    const button =
+                        event.currentTarget;
+
+                    try {
+
+                        loading(button, true);
+
+                        await Auth.loginWithGoogle();
+
+                        window.location.href =
+                            "dashboard.html";
+
+                    } catch (error) {
+
+                        showMessage(
+                            getFirebaseError(
+                                error
+                            )
+                        );
+
+                        loading(button, false);
+                    }
+                }
+            );
+
+
+        // GITHUB
+
+        document
+            .getElementById(
+                "github-login"
+            )
+            ?.addEventListener(
+                "click",
+                async event => {
+
+                    const button =
+                        event.currentTarget;
+
+                    try {
+
+                        loading(button, true);
+
+                        await Auth.loginWithGithub();
+
+                        window.location.href =
+                            "dashboard.html";
+
+                    } catch (error) {
+
+                        showMessage(
+                            getFirebaseError(
+                                error
+                            )
+                        );
+
+                        loading(button, false);
+                    }
+                }
+            );
+
+
+        // PHONE MODAL
+
+        const phoneModal =
+            document.getElementById(
+                "phone-modal"
+            );
+
+
+        document
+            .getElementById(
+                "phone-login"
+            )
+            ?.addEventListener(
+                "click",
+                () => {
+
+                    phoneModal
+                        ?.classList
+                        .remove("hidden");
+                }
+            );
+
+
+        document
+            .getElementById(
+                "close-phone"
+            )
+            ?.addEventListener(
+                "click",
+                () => {
+
+                    phoneModal
+                        ?.classList
+                        .add("hidden");
+                }
+            );
+
+
+        // SEND OTP
+
+        document
+            .getElementById(
+                "send-otp"
+            )
+            ?.addEventListener(
+                "click",
+                async event => {
+
+                    const button =
+                        event.currentTarget;
+
+                    const phone =
+                        document
+                            .getElementById(
+                                "phone-input"
+                            )
+                            .value
+                            .trim();
+
+
+                    if (
+                        !/^\+\d{10,15}$/.test(
+                            phone
+                        )
+                    ) {
+
+                        alert(
+                            "Use international format, e.g. +919876543210"
+                        );
+
+                        return;
+                    }
+
+
+                    try {
+
+                        loading(button, true);
+
+                        await Auth.sendPhoneOTP(
+                            phone
+                        );
+
+                        document
+                            .getElementById(
+                                "otp-section"
+                            )
+                            .classList
+                            .remove("hidden");
+
+                        button.textContent =
+                            "OTP sent";
+
+                        button.disabled =
+                            true;
+
+                    } catch (error) {
+
+                        console.error(error);
+
+                        alert(
+                            getFirebaseError(
+                                error
+                            )
+                        );
+
+                        loading(
+                            button,
+                            false
                         );
                     }
-                } else {
-                    localStorage.setItem(
-                        "profileEmail",
-                        email
-                    );
+                }
+            );
 
-                    localStorage.setItem(
-                        "profileName",
-                        email.split("@")[0]
+
+        // VERIFY OTP
+
+        document
+            .getElementById(
+                "verify-otp"
+            )
+            ?.addEventListener(
+                "click",
+                async event => {
+
+                    const button =
+                        event.currentTarget;
+
+                    const code =
+                        document
+                            .getElementById(
+                                "otp-input"
+                            )
+                            .value
+                            .trim();
+
+
+                    if (
+                        !/^\d{6}$/.test(
+                            code
+                        )
+                    ) {
+
+                        alert(
+                            "Enter the 6-digit OTP."
+                        );
+
+                        return;
+                    }
+
+
+                    try {
+
+                        loading(
+                            button,
+                            true
+                        );
+
+                        await Auth.verifyPhoneOTP(
+                            code
+                        );
+
+                        window.location.href =
+                            "dashboard.html";
+
+                    } catch (error) {
+
+                        alert(
+                            getFirebaseError(
+                                error
+                            )
+                        );
+
+                        loading(
+                            button,
+                            false
+                        );
+                    }
+                }
+            );
+
+
+        // FORGOT PASSWORD
+
+        const forgotModal =
+            document.getElementById(
+                "forgot-modal"
+            );
+
+
+        document
+            .getElementById(
+                "forgot-password"
+            )
+            ?.addEventListener(
+                "click",
+                () => {
+
+                    const email =
+                        document
+                            .getElementById(
+                                "email"
+                            )
+                            .value;
+
+                    document
+                        .getElementById(
+                            "reset-email"
+                        )
+                        .value = email;
+
+                    forgotModal
+                        ?.classList
+                        .remove("hidden");
+                }
+            );
+
+
+        document
+            .getElementById(
+                "close-forgot"
+            )
+            ?.addEventListener(
+                "click",
+                () => {
+
+                    forgotModal
+                        ?.classList
+                        .add("hidden");
+                }
+            );
+
+
+        document
+            .getElementById(
+                "send-reset"
+            )
+            ?.addEventListener(
+                "click",
+                async event => {
+
+                    const email =
+                        document
+                            .getElementById(
+                                "reset-email"
+                            )
+                            .value
+                            .trim();
+
+                    if (!email) {
+
+                        alert(
+                            "Enter your email address."
+                        );
+
+                        return;
+                    }
+
+
+                    try {
+
+                        loading(
+                            event.currentTarget,
+                            true
+                        );
+
+                        await Auth.forgotPassword(
+                            email
+                        );
+
+                        alert(
+                            "Password reset link sent. Check your email."
+                        );
+
+                        forgotModal
+                            ?.classList
+                            .add("hidden");
+
+                    } catch (error) {
+
+                        alert(
+                            getFirebaseError(
+                                error
+                            )
+                        );
+
+                    } finally {
+
+                        loading(
+                            event.currentTarget,
+                            false
+                        );
+                    }
+                }
+            );
+
+
+        // PASSWORD VISIBILITY
+
+        document
+            .querySelectorAll(
+                ".password-toggle"
+            )
+            .forEach(
+                button => {
+
+                    button.addEventListener(
+                        "click",
+                        () => {
+
+                            const target =
+                                document.getElementById(
+                                    button.dataset.target
+                                );
+
+                            if (
+                                target.type ===
+                                "password"
+                            ) {
+
+                                target.type =
+                                    "text";
+
+                                button.innerHTML =
+                                    `<i class="fa-regular fa-eye-slash"></i>`;
+
+                            } else {
+
+                                target.type =
+                                    "password";
+
+                                button.innerHTML =
+                                    `<i class="fa-regular fa-eye"></i>`;
+                            }
+                        }
                     );
                 }
+            );
 
-                window.location.href =
-                    "dashboard.html";
-
-            } catch (error) {
-                console.error(
-                    "Login failed:",
-                    error
-                );
-
-                alert(
-                    error.message ||
-                    "Login failed. Please check your email and password."
-                );
-
-                btn.disabled = false;
-                btn.innerHTML = "Login";
-            }
-        });
     }
+);
 
-    // --- 2. Open Social Login Modal ---
-    let currentProvider = '';
-    const authModal = document.getElementById("auth-modal");
-    const modalIcon = document.getElementById("modal-provider-icon");
 
-    document.getElementById("google-login")?.addEventListener("click", () => {
-        currentProvider = 'Google';
-        modalIcon.className = 'fab fa-google';
-        modalIcon.style.color = '#db4437';
-        authModal.classList.remove("hidden");
-    });
+// ======================================================
+// FIREBASE ERROR FORMATTER
+// ======================================================
 
-    document.getElementById("github-login")?.addEventListener("click", () => {
-        currentProvider = 'GitHub';
-        modalIcon.className = 'fab fa-github';
-        modalIcon.style.color = '#333';
-        authModal.classList.remove("hidden");
-    });
+function getFirebaseError(error) {
 
-    // --- 3. Forgot Password Modal Logic ---
-    const forgotModal = document.getElementById("forgot-modal");
-    
-    document.getElementById("forgot-pwd-link")?.addEventListener("click", (e) => {
-        e.preventDefault();
-        forgotModal.classList.remove("hidden");
-    });
-});
+    const code =
+        error?.code || "";
 
-// --- Modal Global Functions ---
+    const errors = {
 
-function closeAuthModal() {
-    document.getElementById("auth-modal").classList.add("hidden");
+        "auth/invalid-credential":
+            "Email or password is incorrect.",
+
+        "auth/invalid-email":
+            "Please enter a valid email address.",
+
+        "auth/user-not-found":
+            "No account exists with this email.",
+
+        "auth/wrong-password":
+            "Incorrect password.",
+
+        "auth/email-already-in-use":
+            "An account already exists with this email.",
+
+        "auth/weak-password":
+            "Password should be at least 6 characters.",
+
+        "auth/popup-closed-by-user":
+            "Authentication window was closed.",
+
+        "auth/popup-blocked":
+            "Your browser blocked the authentication popup.",
+
+        "auth/account-exists-with-different-credential":
+            "An account already exists using another login method.",
+
+        "auth/invalid-verification-code":
+            "The OTP is incorrect.",
+
+        "auth/too-many-requests":
+            "Too many attempts. Please try again later."
+    };
+
+
+    return (
+        errors[code] ||
+        error?.message ||
+        "Authentication failed."
+    );
 }
 
-function closeForgotModal() {
-    document.getElementById("forgot-modal").classList.add("hidden");
-}
 
-// Jab user official-looking account select karega:
-function selectAccount(email, name) {
-    localStorage.setItem("emergency_token", "oauth_token_123");
-    localStorage.setItem("profileEmail", email);
-    localStorage.setItem("profileName", name);
-    
-    // UI feedback
-    document.getElementById("modal-title").innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-    
-    setTimeout(() => {
-        window.location.href = "dashboard.html";
-    }, 1000);
-}
-
-// Reset password bhejne ki script
-function sendResetLink() {
-    const email = document.getElementById("reset-email").value;
-    if(!email) {
-        alert("Please enter a valid email address!");
-        return;
-    }
-    
-    alert(`Password reset link has been successfully sent to ${email}`);
-    closeForgotModal();
-}
-// --- Use Another Account Logic ---
-function customAccountLogin() {
-    const customEmail = prompt("Enter the email address you want to use:");
-    if(customEmail && customEmail.includes('@')) {
-        const name = customEmail.split('@')[0];
-        selectAccount(customEmail, name); // Call existing select function
-    } else if (customEmail) {
-        alert("Please enter a valid email!");
-    }
-}
-
-// --- Phone Login Logic ---
-document.getElementById("phone-login")?.addEventListener("click", () => {
-    document.getElementById("phone-modal").classList.remove("hidden");
-});
-
-function sendOTP() {
-    const phone = document.getElementById("phone-input").value;
-    if(phone.length < 10) {
-        alert("Please enter a valid phone number!");
-        return;
-    }
-    
-    // OTP Simulation
-    const otp = prompt(`An OTP has been sent to ${phone}.\nPlease enter the 4-digit OTP (hint: type 1234):`);
-    
-    if(otp === "1234") {
-        localStorage.setItem("emergency_token", "phone_auth_token");
-        localStorage.setItem("profileEmail", phone);
-        localStorage.setItem("profileName", "Phone User");
-        
-        alert("Phone verification successful!");
-        window.location.href = "dashboard.html";
-    } else {
-        alert("Invalid OTP! Try again.");
-    }
-}
-
+window.getFirebaseError =
+    getFirebaseError;

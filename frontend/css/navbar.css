@@ -74,3 +74,14 @@
     gap: 15px !important;
     align-items: center !important;
 }
+
+.nav-auth .nav-login-btn {
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.55) !important;
+}
+
+.nav-auth .nav-login-btn:hover {
+    color: #ffffff !important;
+    background: var(--primary-color, #2563eb) !important;
+    border-color: var(--primary-color, #2563eb) !important;
+}

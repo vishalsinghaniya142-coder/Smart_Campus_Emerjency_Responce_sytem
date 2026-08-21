@@ -25,6 +25,21 @@
 .card-icon { font-size: 2.8rem; }
 .card-info h3 { font-size: 1rem; color: var(--text-light); margin-bottom: 8px; font-weight: 600; }
 .card-info h2 { font-size: 1.6rem; color: var(--text-dark); }
+.image-risk-card { grid-column: span 2; }
+.image-risk-card input { display: block; max-width: 100%; margin: 0.35rem 0 0.65rem; font-size: 0.8rem; }
+.image-risk-card .btn { padding: 7px 12px; font-size: 0.8rem; }
+.image-risk-result { max-width: 520px; margin-top: 0.65rem; color: var(--text-light); font-size: 0.8rem; }
+.sms-settings-panel { margin-bottom: 2rem; padding: 1.5rem; background: #fff; border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+.sms-settings-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.sms-settings-heading h2 { margin: 0; font-size: 1.2rem; }
+.settings-eyebrow { margin: 0 0 0.2rem; color: var(--primary-color); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.settings-badge { padding: 0.35rem 0.6rem; background: #fef3c7; border-radius: 999px; color: #92400e; font-size: 0.75rem; font-weight: 700; }
+.sms-settings-form { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.85rem; margin-top: 1rem; }
+.sms-settings-form label { color: var(--text-light); font-size: 0.8rem; font-weight: 600; }
+.sms-settings-form input { display: block; width: 100%; margin-top: 0.3rem; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 5px; color: var(--text-dark); }
+.sms-settings-status { min-height: 1.2rem; margin: 0.8rem 0 0; color: var(--text-light); font-size: 0.8rem; }
+@media (max-width: 700px) { .image-risk-card { grid-column: span 1; } }
+@media (max-width: 600px) { .sms-settings-heading { align-items: flex-start; flex-direction: column; } .sms-settings-form { grid-template-columns: 1fr; } }
 
 /* Custom Risk Dropdown Styling */
 .risk-select { 

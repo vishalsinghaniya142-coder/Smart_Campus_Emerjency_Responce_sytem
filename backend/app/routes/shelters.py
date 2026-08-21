@@ -1,17 +1,109 @@
-from typing import Any, Dict
+from math import atan2, cos, radians, sin, sqrt
+from datetime import datetime, timezone
+from enum import Enum
+from typing import Any, Dict, List
+from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from app.dependencies import get_current_user
+from app.models.shelter import ShelterCreate
+from app.utils.response import created_response
+from app.services.database.firebase_client import db
 
 router = APIRouter(
-    prefix="/shelters",
     tags=["Shelters"],
 )
+
+
+SHELTERS_COLLECTION = "shelters"
+
+
+def shelter_for_map(document: Any) -> Dict[str, Any]:
+    data = document.to_dict() or {}
+    location = data.get("location") or {}
+    capacity = data.get("capacity") or {}
+
+    if not isinstance(location, dict):
+        location = {"address": str(location)}
+    if not isinstance(capacity, dict):
+        capacity = {"occupied": 0, "total": capacity}
+
+    return {
+        "id": document.id,
+        "name": data.get("name", "Emergency shelter"),
+        "latitude": location.get("latitude"),
+        "longitude": location.get("longitude"),
+        "address": location.get("address"),
+        "capacity": f"{capacity.get('occupied', 0)} / {capacity.get('total', 0)}",
+        "availability": data.get("status", "available").replace("_", " ").title(),
+        "description": data.get("description"),
+        "amenities": data.get("amenities", {}),
+    }
+
+
+def load_shelters() -> List[Dict[str, Any]]:
+    return [
+        shelter_for_map(document)
+        for document in db.collection(SHELTERS_COLLECTION).stream()
+    ]
+
+
+def normalize_firestore_value(value: Any) -> Any:
+    if isinstance(value, Enum):
+        return value.value
+    if isinstance(value, dict):
+        return {key: normalize_firestore_value(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [normalize_firestore_value(item) for item in value]
+    return value
+
+
+def distance_km(
+    latitude_a: float,
+    longitude_a: float,
+    latitude_b: float,
+    longitude_b: float,
+) -> float:
+    earth_radius_km = 6371
+    latitude_delta = radians(latitude_b - latitude_a)
+    longitude_delta = radians(longitude_b - longitude_a)
+    value = (
+        sin(latitude_delta / 2) ** 2
+        + cos(radians(latitude_a))
+        * cos(radians(latitude_b))
+        * sin(longitude_delta / 2) ** 2
+    )
+    return round(earth_radius_km * 2 * atan2(sqrt(value), sqrt(1 - value)), 2)
 
 
 # ============================================================
 # GET ALL SHELTERS
 # ============================================================
+
+@router.post("", status_code=status.HTTP_201_CREATED)
+async def create_shelter(
+    payload: ShelterCreate,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    user_id = current_user.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Authenticated user could not be identified.")
+
+    shelter_id = f"shelter_{uuid4().hex}"
+    now = datetime.now(timezone.utc)
+    data = payload.model_dump(mode="python")
+    data["created_by"] = user_id
+    data["created_at"] = now
+    data["updated_at"] = now
+    data = normalize_firestore_value(data)
+
+    document_ref = db.collection(SHELTERS_COLLECTION).document(shelter_id)
+    document_ref.set({"id": shelter_id, **data})
+    return created_response(
+        data=shelter_for_map(document_ref.get()),
+        message="Shelter created successfully.",
+    )
 
 @router.get("")
 async def get_shelters(
@@ -30,8 +122,8 @@ async def get_shelters(
 
     return {
         "success": True,
-        "message": "Shelter endpoint is ready.",
-        "data": [],
+        "message": "Shelters retrieved successfully.",
+        "data": load_shelters()[offset:offset + limit],
         "limit": limit,
         "offset": offset,
     }
@@ -58,10 +150,27 @@ async def get_nearest_shelters(
         actual nearest-shelter calculation.
     """
 
+    shelters = []
+    for shelter in load_shelters():
+        if shelter["latitude"] is None or shelter["longitude"] is None:
+            continue
+        shelters.append(
+            {
+                **shelter,
+                "distance_km": distance_km(
+                    latitude,
+                    longitude,
+                    shelter["latitude"],
+                    shelter["longitude"],
+                ),
+            }
+        )
+    shelters.sort(key=lambda shelter: shelter["distance_km"])
+
     return {
         "success": True,
-        "message": "Nearest shelter endpoint is ready.",
-        "data": [],
+        "message": "Nearest shelters retrieved successfully.",
+        "data": shelters[:limit],
         "location": {
             "latitude": latitude,
             "longitude": longitude,
@@ -90,9 +199,17 @@ async def get_shelter(
             detail="Shelter ID is required.",
         )
 
+    document = db.collection(SHELTERS_COLLECTION).document(shelter_id).get()
+
+    if not document.exists:
+        raise HTTPException(
+            status_code=404,
+            detail="Shelter not found.",
+        )
+
     return {
         "success": True,
-        "message": "Shelter lookup endpoint is ready.",
-        "data": None,
+        "message": "Shelter retrieved successfully.",
+        "data": shelter_for_map(document),
         "shelter_id": shelter_id,
     }

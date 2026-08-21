@@ -15,6 +15,11 @@ from app.models.incident import (
     IncidentStatus,
     IncidentType,
 )
+from app.models.alert import (
+    AlertAudience,
+    AlertSeverity,
+    AlertType,
+)
 
 from app.schemas.incident_schema import (
     IncidentCreateRequest,
@@ -25,6 +30,7 @@ from app.schemas.incident_schema import (
     build_incident_list_response,
     build_incident_response,
 )
+from app.schemas.alert_schema import AlertCreateRequest, AlertLocationRequest
 
 from app.services.incident_service import (
     create_incident,
@@ -33,6 +39,7 @@ from app.services.incident_service import (
     list_incidents,
     update_incident,
 )
+from app.services.alert_service import create_alert
 
 from app.utils.response import (
     created_response,
@@ -163,6 +170,48 @@ async def report_incident(
             detail="Unable to create incident.",
         ) from exc
 
+    # Keep campus-wide alert delivery synchronized with incident reports.
+    try:
+        alert_type_map = {
+            "fire": AlertType.FIRE,
+            "medical": AlertType.MEDICAL,
+            "security": AlertType.SECURITY,
+            "natural_disaster": AlertType.WEATHER,
+        }
+        alert_type = alert_type_map.get(
+            incident.incident_type.value,
+            AlertType.EMERGENCY,
+        )
+        alert_severity = (
+            AlertSeverity(incident.severity.value)
+            if incident.severity is not None
+            else AlertSeverity.MEDIUM
+        )
+        incident_location = incident.location
+        alert = await create_alert(
+            payload=AlertCreateRequest(
+                title=incident.title,
+                message=incident.description,
+                alert_type=alert_type,
+                severity=alert_severity,
+                audience=AlertAudience.ALL,
+                location=AlertLocationRequest(
+                    latitude=incident_location.latitude,
+                    longitude=incident_location.longitude,
+                    address=incident_location.address,
+                    building=incident_location.building,
+                    floor=incident_location.floor,
+                    room=incident_location.room,
+                ),
+            ),
+            creator_id=reporter_id,
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Incident was saved, but its alert could not be synchronized.",
+        ) from exc
+
     # --------------------------------------------------------
     # Convert model to API response
     # --------------------------------------------------------
@@ -171,10 +220,11 @@ async def report_incident(
         incident
     )
 
+    response_payload = response_data.model_dump(mode="json")
+    response_payload["alert_id"] = alert.id
+
     return created_response(
-        data=response_data.model_dump(
-            mode="json"
-        ),
+        data=response_payload,
         message="Incident reported successfully.",
     )
 

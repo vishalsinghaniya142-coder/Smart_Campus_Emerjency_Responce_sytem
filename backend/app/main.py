@@ -1,3 +1,4 @@
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -11,7 +12,6 @@ from app.middleware.error_handler import (
 from app.middleware.auth_middleware import (
     configure_authentication_middleware,
 )
-
 from app.routes.auth import router as auth_router
 from app.routes.users import router as users_router
 from app.routes.incidents import router as incidents_router
@@ -20,6 +20,27 @@ from app.routes.sos import router as sos_router
 from app.routes.shelters import router as shelters_router
 from app.routes.predictions import router as predictions_router
 from app.routes.chatbot import router as chatbot_router
+from app.services.auth_service import configure_user_repository
+from app.services.database.users import FirebaseUserRepository
+from app.services.incident_service import (
+    configure_incident_repository,
+)
+
+from app.services.database.incidents import (
+    FirebaseIncidentRepository,
+)
+
+from app.services.sos_service import (
+    configure_sos_repository,
+)
+
+from app.services.database.sos import (
+    FirebaseSOSRepository,
+)
+from app.services.alert_service import configure_alert_repository
+from app.services.database.alerts import FirebaseAlertRepository
+from app.services.alert_service import configure_alert_notification_service
+from app.services.notification_service import SmsGatewayNotificationService
 from app.routes.image_analysis import (
     router as image_analysis_router,
 )
@@ -114,6 +135,55 @@ async def lifespan(app: FastAPI):
 
     print("Loading application configuration...")
     print("Loading middleware...")
+    print("Loading database...")
+
+
+    try:
+        user_repository = FirebaseUserRepository()
+
+        configure_user_repository(
+            user_repository
+        )
+
+        print("Firebase user repository configured.")
+
+    except Exception as exc:
+        print(
+            f"Firebase user repository configuration failed: {exc}"
+        )
+        raise
+    try:
+        incident_repository = FirebaseIncidentRepository()
+
+        configure_incident_repository(
+            incident_repository
+        )
+        sos_repository = FirebaseSOSRepository()
+
+        configure_sos_repository(
+            sos_repository
+        )
+
+        alert_repository = FirebaseAlertRepository()
+
+        configure_alert_repository(
+            alert_repository
+        )
+
+        configure_alert_notification_service(
+            SmsGatewayNotificationService()
+        )
+
+        print("Firebase incident repository configured.")
+        print("Firebase SOS repository configured.")
+        print("Firebase alert repository configured.")
+        print("SMS gateway notification service configured.")
+
+    except Exception as exc:
+        print(
+            f"Firebase incident, SOS, or alert repository configuration failed: {exc}"
+        )
+        raise
     print("Loading API routes...")
     print("Backend startup completed.")
 

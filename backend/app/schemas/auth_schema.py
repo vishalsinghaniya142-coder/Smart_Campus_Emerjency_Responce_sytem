@@ -58,6 +58,13 @@ class RegisterRequest(AuthBase):
         description="User's email address.",
         examples=["vishal@example.com"],
     )
+    phone_number: str = Field(
+    ...,
+    min_length=10,
+    max_length=20,
+    description="Registered mobile number of the user.",
+    examples=["9876543210"],
+    )
 
     password: str = Field(
         ...,

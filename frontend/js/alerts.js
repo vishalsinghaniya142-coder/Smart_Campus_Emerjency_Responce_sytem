@@ -136,15 +136,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
         alerts.forEach((alert) => {
-
-            const alertElement =
-                createAlertElement(alert);
-
-
-            alertsContainer.appendChild(
-                alertElement
-            );
-
+            const alertElement = createAlertElement(alert);
+            if (alertElement) {
+                alertsContainer.appendChild(alertElement);
+            }
         });
 
 
@@ -200,6 +195,10 @@ function createAlertElement(alert) {
     const wrapper =
         document.createElement("div");
 
+    if (!alert || !alert.title || !alert.message) {
+        return null;
+    }
+
 
     // ------------------------------------------------------------
     // Get alert values
@@ -210,26 +209,35 @@ function createAlertElement(alert) {
             alert.severity ||
             alert.level ||
             alert.alert_level ||
-            "moderate"
+            "unknown"
         ).toLowerCase();
 
 
-    const title =
-        alert.title ||
-        alert.name ||
-        "Emergency Alert";
-
-
-    const message =
-        alert.message ||
-        alert.description ||
-        alert.details ||
-        "Please stay alert and follow emergency instructions.";
+    const title = alert.title;
+    const message = alert.message;
 
 
     const location =
-        alert.location ||
-        "";
+        alert.location || {};
+
+    const locationText = [
+        location.address,
+        location.building,
+        location.floor,
+        location.room
+    ].filter(Boolean).join(", ");
+
+    const formatDate = (value) => {
+        if (!value) return "Time unavailable";
+        const date = new Date(value);
+        return Number.isNaN(date.getTime())
+            ? "Time unavailable"
+            : date.toLocaleString();
+    };
+
+    const alertType = String(alert.alert_type || "emergency").replaceAll("_", " ");
+    const audience = String(alert.audience || "all").replaceAll("_", " ");
+    const alertStatus = String(alert.status || "active").replaceAll("_", " ");
 
 
     // ------------------------------------------------------------
@@ -276,39 +284,26 @@ function createAlertElement(alert) {
     // ------------------------------------------------------------
 
     wrapper.innerHTML = `
-        <div
-            style="
-                background: ${background};
-                border-left: 5px solid ${borderColor};
-                padding: 1rem;
-                margin-bottom: 1rem;
-                border-radius: 4px;
-            "
-        >
+        <div class="alert-detail-card" style="background: ${background}; border-left: 5px solid ${borderColor}; color: ${textColor};">
 
             <h3 style="color: ${titleColor};">
                 <i class="fas ${icon}"></i>
                 ${escapeHtml(title)}
             </h3>
 
-            <p style="color: ${textColor};">
+            <div class="alert-meta" aria-label="Alert details">
+                <span><i class="fas fa-bolt" aria-hidden="true"></i> ${escapeHtml(severity)}</span>
+                <span><i class="fas fa-tag" aria-hidden="true"></i> ${escapeHtml(alertType)}</span>
+                <span><i class="fas fa-users" aria-hidden="true"></i> ${escapeHtml(audience)}</span>
+                <span><i class="fas fa-circle-check" aria-hidden="true"></i> ${escapeHtml(alertStatus)}</span>
+            </div>
+
+            <p class="alert-message">
                 ${escapeHtml(message)}
             </p>
 
-            ${
-                location
-                    ? `
-                    <p style="
-                        color: ${textColor};
-                        margin-top: 8px;
-                        font-size: 0.9rem;
-                    ">
-                        <i class="fas fa-location-dot"></i>
-                        ${escapeHtml(location)}
-                    </p>
-                    `
-                    : ""
-            }
+            ${locationText ? `<p class="alert-context"><i class="fas fa-location-dot" aria-hidden="true"></i> ${escapeHtml(locationText)}</p>` : ""}
+            <p class="alert-timestamp"><i class="fas fa-clock" aria-hidden="true"></i> Updated ${escapeHtml(formatDate(alert.updated_at || alert.created_at))}</p>
 
         </div>
     `;

@@ -5,6 +5,7 @@
     <title>Live Map - SafeGuard</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/sidebar.css">
+    <link rel="stylesheet" href="css/map.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
@@ -12,13 +13,31 @@
 <body style="display: flex;">
     <div id="sidebar-placeholder"></div>
     
-    <main style="flex: 1; margin-left: 250px; height: 100vh;">
-        <!-- The map takes full height of the main container -->
+    <main class="map-main">
+        <div class="map-toolbar" role="region" aria-label="Map controls">
+            <div>
+                <p class="map-eyebrow">Emergency response</p>
+                <h1>Live safety map</h1>
+                <p id="map-status" role="status">Loading nearby safe zones...</p>
+            </div>
+            <div class="map-actions">
+                <button class="btn btn-primary" id="locate-me" type="button">
+                    <i class="fas fa-location-crosshairs" aria-hidden="true"></i> Use my location
+                </button>
+                <button class="btn btn-outline" id="reset-map" type="button">Reset view</button>
+            </div>
+        </div>
         <div id="emergency-map" style="width: 100%; height: 100%;"></div>
+        <aside class="map-legend" aria-label="Map legend">
+            <div><span class="legend-dot user-dot"></span> Your location</div>
+            <div><span class="legend-dot shelter-dot"></span> Safe shelter</div>
+        </aside>
     </main>
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="js/main.js"></script>
-    <script src="js/map.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/location.js"></script>
+    <script src="js/map.js?v=2"></script>
 </body>
 </html>

@@ -63,10 +63,34 @@ async def analyze_image(
             ),
         )
 
-    raise HTTPException(
-        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        detail=(
-            "Image analysis AI service is not connected yet. "
-            "Connect Member 3 vision service."
-        ),
-    )
+    image_bytes = await file.read()
+    max_size = 10 * 1024 * 1024
+    if len(image_bytes) > max_size:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail="Image must be 10 MB or smaller.",
+        )
+
+    filename = file.filename.lower()
+    visual_keywords = {
+        "fire": ("severe", 0.9, "Filename indicates a possible fire scene."),
+        "smoke": ("high", 0.75, "Filename indicates a possible smoke scene."),
+        "flood": ("high", 0.75, "Filename indicates a possible flood scene."),
+        "accident": ("high", 0.75, "Filename indicates a possible accident scene."),
+        "medical": ("high", 0.75, "Filename indicates a possible medical emergency."),
+    }
+    risk, confidence, reason = ("moderate", 0.35, "Image received; professional review is recommended.")
+    for keyword, result in visual_keywords.items():
+        if keyword in filename:
+            risk, confidence, reason = result
+            break
+
+    return {
+        "success": True,
+        "analysis_mode": "baseline",
+        "filename": file.filename,
+        "risk_level": risk,
+        "confidence": confidence,
+        "reason": reason,
+        "next_step": "Connect a vision model for pixel-level image analysis.",
+    }

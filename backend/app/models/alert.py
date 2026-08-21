@@ -389,15 +389,21 @@ class AlertListItem(BaseModel):
 
     title: str
 
+    message: str
+
     alert_type: AlertType
 
     severity: AlertSeverity
 
     audience: AlertAudience
 
+    location: Optional[AlertLocation] = None
+
     status: AlertStatus
 
     created_at: datetime
+
+    updated_at: datetime
 
     expires_at: Optional[datetime]
 

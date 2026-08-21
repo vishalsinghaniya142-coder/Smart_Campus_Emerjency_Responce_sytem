@@ -17,7 +17,7 @@ from app.services.sos_service import (
 
 
 router = APIRouter(
-    prefix="/sos",
+
     tags=["SOS"],
 )
 

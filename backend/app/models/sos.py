@@ -210,9 +210,18 @@ def sos_to_document(
     Convert SOS model into a database-neutral dictionary.
     """
 
-    return sos.model_dump(
-        mode="json"
-    )
+    document = sos.model_dump(mode="python")
+
+    def normalize(value: Any) -> Any:
+        if isinstance(value, dict):
+            return {key: normalize(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [normalize(item) for item in value]
+        if hasattr(value, "value"):
+            return value.value
+        return value
+
+    return normalize(document)
 
 
 # ============================================================

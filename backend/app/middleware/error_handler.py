@@ -158,7 +158,7 @@ async def http_exception_handler(
     elif status_code == status.HTTP_409_CONFLICT:
         error_code = "CONFLICT"
 
-    elif status_code == status.HTTP_422_UNPROCESSABLE_ENTITY:
+    elif status_code == status.HTTP_422_UNPROCESSABLE_CONTENT:
         error_code = "UNPROCESSABLE_ENTITY"
 
     elif status_code == status.HTTP_429_TOO_MANY_REQUESTS:
@@ -243,7 +243,7 @@ async def validation_exception_handler(
     )
 
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
         content=response_body,
     )
 

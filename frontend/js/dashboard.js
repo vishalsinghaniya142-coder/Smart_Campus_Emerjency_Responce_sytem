@@ -1,12 +1,99 @@
 // js/dashboard.js
-document.addEventListener("DOMContentLoaded", () => {
-    // 1. Fetch user name from LocalStorage
-    const username = localStorage.getItem("profileName") || "Admin";
-    document.getElementById("dash-username").textContent = username;
+document.addEventListener("DOMContentLoaded", async () => {
+    const defaultLocation = { latitude: 26.8467, longitude: 80.9462 };
+    const addActivity = (text) => {
+        const list = document.getElementById("activity-list");
+        if (!list) return;
+        const loading = document.getElementById("activity-loading");
+        if (loading) loading.remove();
+        const li = document.createElement("li");
+        li.innerHTML = `<i class="fas fa-clock" style="color:#94a3b8;"></i> ${escapeHtml(text)}`;
+        list.prepend(li);
+    };
+
+    async function loadDashboardData() {
+        let location = defaultLocation;
+        try {
+            const current = await LocationService.getUserLocation();
+            location = { latitude: current.lat, longitude: current.lng };
+        } catch (_) {
+            addActivity("Using the default campus location for shelter search.");
+        }
+
+        const results = await Promise.allSettled([
+            API.request("/users/profile"),
+            API.request(`/shelters/nearest?latitude=${location.latitude}&longitude=${location.longitude}&limit=1`),
+            API.request("/alerts?active_only=true&limit=100")
+        ]);
+
+        const [profileResult, shelterResult, alertsResult] = results;
+        if (profileResult.status === "fulfilled") {
+            const profile = profileResult.value.data || profileResult.value;
+            document.getElementById("dash-username").textContent = profile.name || "User";
+        } else {
+            document.getElementById("dash-username").textContent = localStorage.getItem("profileName") || "User";
+        }
+
+        if (shelterResult.status === "fulfilled") {
+            const shelters = shelterResult.value.data || [];
+            const nearest = shelters[0];
+            document.getElementById("shelter-text").textContent = nearest
+                ? `${nearest.name} (${nearest.distance_km} km)`
+                : "No shelter found";
+        } else {
+            document.getElementById("shelter-text").textContent = "Unavailable";
+        }
+
+        if (alertsResult.status === "fulfilled") {
+            const payload = alertsResult.value.data;
+            const alerts = Array.isArray(payload) ? payload : (payload?.alerts || []);
+            document.getElementById("alerts-text").textContent = `${alerts.length} Active`;
+        } else {
+            document.getElementById("alerts-text").textContent = "Unavailable";
+        }
+
+        addActivity("Dashboard data synchronized from the backend.");
+    }
+
+    await loadDashboardData();
+
+    const smsSettingsForm = document.getElementById("sms-settings-form");
+    const smsSettingsStatus = document.getElementById("sms-settings-status");
+    const smsFields = {
+        server: document.getElementById("sms-server"),
+        username: document.getElementById("sms-username"),
+        password: document.getElementById("sms-password"),
+        deviceId: document.getElementById("sms-device-id")
+    };
+    const storedSmsSettings = localStorage.getItem("sms_gateway_settings");
+    if (storedSmsSettings) {
+        try {
+            const values = JSON.parse(storedSmsSettings);
+            Object.entries(smsFields).forEach(([key, field]) => {
+                if (values[key]) field.value = values[key];
+            });
+        } catch (_) {
+            localStorage.removeItem("sms_gateway_settings");
+        }
+    }
+    smsSettingsForm?.addEventListener("submit", (event) => {
+        event.preventDefault();
+        localStorage.setItem("sms_gateway_settings", JSON.stringify({
+            server: smsFields.server.value.trim(),
+            username: smsFields.username.value.trim(),
+            password: smsFields.password.value,
+            deviceId: smsFields.deviceId.value.trim()
+        }));
+        smsSettingsStatus.textContent = "Configuration saved on this browser. Backend SMS sending still uses backend/.env.";
+        addActivity("SMS gateway configuration saved locally.");
+    });
 
     // 2. Risk Level Logic (Change colors dynamically)
     const riskSelector = document.getElementById("risk-selector");
     const cardRisk = document.getElementById("card-risk");
+    const imageInput = document.getElementById("risk-image");
+    const analyzeImageButton = document.getElementById("analyze-image-btn");
+    const imageResult = document.getElementById("image-risk-result");
 
     const updateRiskColor = (level) => {
         riskSelector.style.color = "white";
@@ -34,6 +121,39 @@ document.addEventListener("DOMContentLoaded", () => {
         addActivity(`Risk level manually updated to ${e.target.value.toUpperCase()}`);
     });
 
+    analyzeImageButton?.addEventListener("click", async () => {
+        const file = imageInput?.files?.[0];
+        if (!file) {
+            imageResult.textContent = "Choose a JPG, PNG, or WEBP image first.";
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+        analyzeImageButton.disabled = true;
+        imageResult.textContent = "Analyzing uploaded image...";
+
+        try {
+            const token = localStorage.getItem("emergency_token");
+            const response = await fetch("http://127.0.0.1:8000/image-analysis", {
+                method: "POST",
+                headers: token ? { Authorization: `Bearer ${token}` } : {},
+                body: formData
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || "Image analysis failed.");
+            const level = data.risk_level || "moderate";
+            riskSelector.value = level;
+            updateRiskColor(level);
+            imageResult.textContent = `${level.toUpperCase()} risk (${Math.round((data.confidence || 0) * 100)}% baseline confidence): ${data.reason}`;
+            addActivity(`Image baseline analysis set risk to ${level.toUpperCase()}.`);
+        } catch (error) {
+            imageResult.textContent = error.message || "Image analysis failed.";
+        } finally {
+            analyzeImageButton.disabled = false;
+        }
+    });
+
     // 3. EMERGENCY SOS BUTTON LOGIC
     const sosBtn = document.getElementById("btn-sos");
     if (sosBtn) {
@@ -59,13 +179,15 @@ navigator.geolocation.getCurrentPosition(
         const longitude = position.coords.longitude;
 
         try {
-
             const response = await API.request(
                 "/sos",
                 "POST",
                 {
+                    location: {
                     latitude: latitude,
                     longitude: longitude
+                     },
+                    message: "Emergency SOS"
                 }
             );
 
@@ -120,14 +242,9 @@ navigator.geolocation.getCurrentPosition(
         });
     }
 
-    // 4. Function to add items to the Live Activity Feed
-    function addActivity(text) {
-        const list = document.getElementById("activity-list");
-        const li = document.createElement("li");
-        const time = new Date().toLocaleTimeString();
-        li.innerHTML = `<i class="fas fa-clock" style="color:#94a3b8;"></i> [${time}] ${text}`;
-        
-        // Add at the top of the list
-        list.prepend(li);
+    function escapeHtml(value) {
+        const element = document.createElement("div");
+        element.textContent = String(value ?? "");
+        return element.innerHTML;
     }
 });

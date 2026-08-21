@@ -39,12 +39,22 @@
                 </div>
             </div>
 
+            <div class="stat-card image-risk-card" id="image-risk-card">
+                <div class="card-icon" style="color: #7c3aed;"><i class="fas fa-image"></i></div>
+                <div class="card-info">
+                    <h3>Image Risk Check</h3>
+                    <input id="risk-image" type="file" accept="image/jpeg,image/png,image/webp" aria-label="Upload image for risk check">
+                    <button id="analyze-image-btn" class="btn btn-primary" type="button">Analyze image</button>
+                    <p id="image-risk-result" class="image-risk-result" role="status">Upload an emergency image for a baseline risk check.</p>
+                </div>
+            </div>
+
             <!-- 2. Nearest Shelter Card (Clickable) -->
             <div class="stat-card clickable-card" onclick="window.location.href='shelters.html'">
                 <div class="card-icon" style="color: #2563eb;"><i class="fas fa-campground"></i></div>
                 <div class="card-info">
                     <h3>Nearest Shelter</h3>
-                    <h2 id="shelter-text">Community Hall (2km)</h2>
+                    <h2 id="shelter-text">Loading...</h2>
                     <span class="click-hint">Click to view map &rarr;</span>
                 </div>
             </div>
@@ -54,25 +64,51 @@
                 <div class="card-icon" style="color: #dc2626;"><i class="fas fa-bell"></i></div>
                 <div class="card-info">
                     <h3>Active Alerts</h3>
-                    <h2 id="alerts-text">2 Warnings</h2>
+                    <h2 id="alerts-text">Loading...</h2>
                     <span class="click-hint">Click to view details &rarr;</span>
                 </div>
             </div>
         </div>
+
+        <section class="sms-settings-panel" aria-labelledby="sms-settings-heading">
+            <div class="sms-settings-heading">
+                <div>
+                    <p class="settings-eyebrow">Notification settings</p>
+                    <h2 id="sms-settings-heading">SMS Gateway Configuration</h2>
+                </div>
+                <span class="settings-badge">Demo configuration</span>
+            </div>
+            <form id="sms-settings-form" class="sms-settings-form">
+                <label>Server address
+                    <input id="sms-server" type="text" value="api.sms-gate.app:443" required>
+                </label>
+                <label>User name
+                    <input id="sms-username" type="text" value="-EVLMS" required>
+                </label>
+                <label>Password
+                    <input id="sms-password" type="password" value="-itocm7jdwizxm" required>
+                </label>
+                <label>Device ID
+                    <input id="sms-device-id" type="text" value="dgQAJSHKzJ90WQCtjvsJi" required>
+                </label>
+                <button class="btn btn-primary" type="submit">Save configuration</button>
+            </form>
+            <p id="sms-settings-status" class="sms-settings-status" role="status"></p>
+        </section>
 
         <!-- Recent Activity Feed -->
         <div class="dash-bottom">
             <div class="activity-feed">
                 <h3><i class="fas fa-bolt" style="color: #f59e0b;"></i> Live System Activity</h3>
                 <ul id="activity-list">
-                    <li><i class="fas fa-check-circle" style="color: #16a34a;"></i> SafeGuard System initialized successfully.</li>
-                    <li><i class="fas fa-cloud-showers-heavy" style="color: #3b82f6;"></i> Weather API synced: Normal conditions.</li>
+                    <li id="activity-loading"><i class="fas fa-spinner fa-spin" style="color: #2563eb;"></i> Syncing live Firebase data...</li>
                 </ul>
             </div>
         </div>
     </main>
     <script src="js/api.js"></script>
+    <script src="js/location.js"></script>
     <script src="js/main.js"></script>
-    <script src="js/dashboard.js"></script>
+    <script src="js/dashboard.js?v=4"></script>
 </body>
 </html>

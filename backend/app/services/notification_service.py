@@ -2,9 +2,14 @@ import os
 import smtplib
 import requests
 import logging
+import uuid
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import List, Dict, Any, Optional
+
+from google.cloud.firestore_v1.base_query import FieldFilter
+
+from app.services.database.firebase_client import db
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +19,6 @@ SMS_ENABLED = os.getenv("SMS_ENABLED", "true").lower() == "true"
 EMAIL_ENABLED = os.getenv("EMAIL_ENABLED", "false").lower() == "true"
 TELEGRAM_ENABLED = os.getenv("TELEGRAM_ENABLED", "false").lower() == "true"
 
-# --- SMS Gateway Settings ---
 # --- SMS Gateway Settings ---
 SMS_GATEWAY_URL = os.getenv(
     "SMS_GATEWAY_URL",
@@ -39,6 +43,10 @@ SMS_GATEWAY_DEVICE_ID = os.getenv(
 SMS_ALERT_LIMIT = int(
     os.getenv("SMS_ALERT_LIMIT", "10")
 )
+TEMPORARY_SMS_RECIPIENTS = os.getenv(
+    "TEMPORARY_SMS_RECIPIENTS",
+    "",
+)
 
 # --- Email Settings ---
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
@@ -57,10 +65,82 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 # =========================================================
 
 def normalize_phone_number(phone: str) -> str:
-    """Phone number se extra symbols remove karta hai."""
+    """Normalize phone number to a gateway-safe value."""
     if not phone:
         return ""
-    return "".join([c for c in str(phone) if c.isdigit() or c == '+'])
+    cleaned = "".join([c for c in str(phone) if c.isdigit() or c == '+'])
+    if cleaned.startswith("00"):
+        cleaned = "+" + cleaned[2:]
+    return cleaned
+
+
+def get_active_users_with_phone_numbers() -> List[str]:
+    """Return deduplicated active Firestore user phone numbers."""
+    users = list(
+        db.collection("users")
+        .where(filter=FieldFilter("is_active", "==", True))
+        .stream()
+    )
+
+    seen = set()
+    phone_numbers: List[str] = []
+
+    for document in users:
+        data = document.to_dict() or {}
+        phone_number = data.get("phone_number")
+        if not phone_number:
+            continue
+
+        sanitized = normalize_phone_number(phone_number)
+        if not sanitized or len(sanitized) < 10:
+            continue
+
+        if sanitized in seen:
+            continue
+
+        seen.add(sanitized)
+        phone_numbers.append(sanitized)
+
+    return phone_numbers
+
+
+def get_configured_sms_recipients() -> List[str]:
+    """Return server-configured emergency recipients."""
+    recipients: List[str] = []
+    seen = set()
+
+    for value in TEMPORARY_SMS_RECIPIENTS.split(","):
+        phone_number = normalize_phone_number(value)
+        if phone_number and len(phone_number) >= 10 and phone_number not in seen:
+            seen.add(phone_number)
+            recipients.append(phone_number)
+
+    return recipients
+
+
+def get_emergency_sms_recipients() -> List[str]:
+    """Combine active users with server-configured emergency recipients."""
+    recipients = get_active_users_with_phone_numbers()
+    seen = set(recipients)
+
+    for phone_number in get_configured_sms_recipients():
+        if phone_number not in seen:
+            seen.add(phone_number)
+            recipients.append(phone_number)
+
+    return recipients
+
+
+def build_sms_contacts(phone_numbers: List[str]) -> List[Dict[str, Any]]:
+    return [
+        {"phone_number": phone_number, "is_active": True}
+        for phone_number in phone_numbers
+    ]
+
+
+def make_google_maps_url(latitude: float, longitude: float) -> str:
+    return f"https://www.google.com/maps?q={latitude},{longitude}"
+
 
 def send_sms_via_gateway(phone_number: str, message: str) -> bool:
     """Send one SMS through SMS-Gate using JWT authentication."""
@@ -162,30 +242,31 @@ def send_sms_via_gateway(phone_number: str, message: str) -> bool:
         return False
 
 
-def send_sms_to_active_contacts(contacts: List[Any], message: str) -> Dict[str, Any]:
-    """
-    Sirf active/activated contacts filter karta hai aur first 10 numbers ko SMS bhejta hai.
-    """
+def send_sms_to_active_contacts(
+    contacts: List[Any],
+    message: str,
+    limit: Optional[int] = SMS_ALERT_LIMIT,
+) -> Dict[str, Any]:
+    """Deliver to active contacts while de-duping valid numbers."""
     if not contacts:
         return {"status": "skipped", "reason": "no_contacts", "sent_count": 0}
 
-    # 1. Filter only active contacts
-    active_contacts = []
-    for c in contacts:
-        if isinstance(c, dict):
-            is_act = c.get("is_active", False) or c.get("activated", False) or c.get("status") == "active"
+    active_contacts: List[Any] = []
+    for contact in contacts:
+        if isinstance(contact, dict):
+            is_active = contact.get("is_active", False) or contact.get("activated", False) or contact.get("status") == "active"
         else:
-            is_act = getattr(c, "is_active", False) or getattr(c, "activated", False) or getattr(c, "status", "") == "active"
+            is_active = getattr(contact, "is_active", False) or getattr(contact, "activated", False) or getattr(contact, "status", "") == "active"
 
-        if is_act:
-            active_contacts.append(c)
+        if is_active:
+            active_contacts.append(contact)
 
-    # 2. Limit to maximum 10 active numbers
-    selected_targets = active_contacts[:SMS_ALERT_LIMIT]
+    selected_targets = active_contacts if limit is None else active_contacts[:limit]
 
+    seen_phone_numbers = set()
     sent_count = 0
     failed_count = 0
-    delivered_numbers = []
+    delivered_numbers: List[str] = []
 
     for contact in selected_targets:
         if isinstance(contact, dict):
@@ -196,20 +277,28 @@ def send_sms_to_active_contacts(contacts: List[Any], message: str) -> Dict[str, 
         if not phone:
             continue
 
-        success = send_sms_via_gateway(phone, message)
+        normalized_phone = normalize_phone_number(phone)
+        if not normalized_phone or len(normalized_phone) < 10:
+            continue
+
+        if normalized_phone in seen_phone_numbers:
+            continue
+        seen_phone_numbers.add(normalized_phone)
+
+        success = send_sms_via_gateway(normalized_phone, message)
         if success:
             sent_count += 1
-            delivered_numbers.append(phone)
+            delivered_numbers.append(normalized_phone)
         else:
             failed_count += 1
 
     return {
         "status": "completed",
         "total_active_found": len(active_contacts),
-        "targeted_limit": SMS_ALERT_LIMIT,
+        "targeted_limit": limit,
         "sent_count": sent_count,
         "failed_count": failed_count,
-        "delivered_to": delivered_numbers
+        "delivered_to": delivered_numbers,
     }
 
 
@@ -242,6 +331,215 @@ class SmsGatewayNotificationService:
             "phone_number": phone_number,
             "message": "SMS could not be sent.",
         }
+
+    async def send_sos_notification(self, sos) -> Dict[str, Any]:
+        """Broadcast an SOS to all active users and store an in-app record."""
+
+        sender_name = "Unknown User"
+        try:
+            sender_document = db.collection("users").document(str(sos.user_id)).get()
+            if sender_document.exists:
+                sender_name = sender_document.to_dict().get("name") or sender_name
+        except Exception as exc:
+            logger.warning(f"Unable to load sender user for SOS notification: {exc}")
+
+        latitude = getattr(getattr(sos, "location", {}), "latitude", None)
+        longitude = getattr(getattr(sos, "location", {}), "longitude", None)
+        if isinstance(sos.location, dict):
+            latitude = sos.location.get("latitude")
+            longitude = sos.location.get("longitude")
+
+        if latitude is None or longitude is None:
+            latitude = 0.0
+            longitude = 0.0
+
+        message = (
+            "🚨 EMERGENCY SOS 🚨\n"
+            f"Sender/User: {sender_name}\n"
+            "Message: Emergency SOS has been triggered.\n\n"
+            "Location:\n"
+            f"Latitude: {latitude}\n"
+            f"Longitude: {longitude}\n"
+            f"Google Maps:\n{make_google_maps_url(float(latitude), float(longitude))}"
+        )
+
+        active_phone_numbers = get_emergency_sms_recipients()
+        sms_result = send_sms_to_active_contacts(
+            build_sms_contacts(active_phone_numbers),
+            message,
+            limit=None,
+        )
+
+        notification_id = f"sos_{uuid.uuid4().hex}"
+        db.collection("notifications").document(notification_id).set({
+            "type": "sos",
+            "title": "Emergency SOS",
+            "message": message,
+            "sos_id": sos.id,
+            "sender_id": sos.user_id,
+            "created_at": getattr(sos, "created_at", None),
+            "status": "active",
+            "active_users_found": len(active_phone_numbers),
+            "sms_sent": sms_result.get("sent_count", 0),
+            "sms_failed": sms_result.get("failed_count", 0),
+        })
+
+        logger.info(
+            "Emergency notification started | "
+            f"Active users found: {len(active_phone_numbers)} | "
+            f"SMS targets: {len(active_phone_numbers)} | "
+            f"SMS sent: {sms_result.get('sent_count', 0)} | "
+            f"SMS failed: {sms_result.get('failed_count', 0)}"
+        )
+
+        return {"sms": sms_result, "notification_id": notification_id}
+
+    async def send_incident_notification(self, incident) -> Dict[str, Any]:
+        """Broadcast a submitted incident to all active registered users."""
+        location = getattr(incident, "location", None)
+        latitude = getattr(location, "latitude", None) if location is not None else None
+        longitude = getattr(location, "longitude", None) if location is not None else None
+        if isinstance(location, dict):
+            latitude = location.get("latitude")
+            longitude = location.get("longitude")
+
+        if latitude is None or longitude is None:
+            latitude = 0.0
+            longitude = 0.0
+
+        location_text = getattr(location, "address", None) if location is not None else None
+        if isinstance(location, dict):
+            location_text = location.get("address") or ""
+
+        incident_type = getattr(incident, "incident_type", None)
+        if hasattr(incident_type, "value"):
+            incident_type = incident_type.value
+
+        severity = getattr(incident, "severity", None)
+        if hasattr(severity, "value"):
+            severity = severity.value
+
+        message = (
+            "🚨 EMERGENCY REPORT 🚨\n"
+            f"Type:\n{incident_type}\n\n"
+            f"Title:\n{incident.title}\n\n"
+            f"Description:\n{incident.description}\n\n"
+            f"Severity:\n{severity}\n\n"
+            f"Location:\n{location_text or 'Not provided'}\n\n"
+            f"GPS:\n{latitude}, {longitude}\n\n"
+            f"Google Maps:\n{make_google_maps_url(float(latitude), float(longitude))}"
+        )
+
+        active_phone_numbers = get_emergency_sms_recipients()
+        sms_result = send_sms_to_active_contacts(
+            build_sms_contacts(active_phone_numbers),
+            message,
+            limit=None,
+        )
+
+        notification_id = f"incident_{uuid.uuid4().hex}"
+        db.collection("notifications").document(notification_id).set({
+            "type": "incident",
+            "title": "Emergency Report",
+            "message": message,
+            "incident_id": incident.id,
+            "created_at": getattr(incident, "created_at", None),
+            "status": "active",
+            "active_users_found": len(active_phone_numbers),
+            "sms_sent": sms_result.get("sent_count", 0),
+            "sms_failed": sms_result.get("failed_count", 0),
+        })
+
+        logger.info(
+            "Emergency notification started | "
+            f"Active users found: {len(active_phone_numbers)} | "
+            f"SMS targets: {len(active_phone_numbers)} | "
+            f"SMS sent: {sms_result.get('sent_count', 0)} | "
+            f"SMS failed: {sms_result.get('failed_count', 0)}"
+        )
+
+        return {"sms": sms_result, "notification_id": notification_id}
+
+    async def send_alert_notification(self, alert) -> Dict[str, Any]:
+        """Send SMS for active alerts created intentionally for broadcast."""
+        raw_status = getattr(alert, "status", "")
+        status_value = getattr(raw_status, "value", raw_status)
+        status_name = str(status_value).lower()
+        if status_name != "active":
+            logger.info(f"Alert SMS skipped because alert status is {status_name!r}.")
+            return {"success": True, "alert_id": str(getattr(alert, "id", "")), "sms": {"status": "skipped"}}
+
+        location = getattr(alert, "location", None)
+        latitude = getattr(location, "latitude", None) if location is not None else None
+        longitude = getattr(location, "longitude", None) if location is not None else None
+        if isinstance(location, dict):
+            latitude = location.get("latitude")
+            longitude = location.get("longitude")
+
+        location_text = "Not provided"
+        if location is not None:
+            location_text = getattr(location, "address", None) or ""
+            if isinstance(location, dict):
+                location_text = location.get("address") or "Not provided"
+
+        alert_type = getattr(alert, "alert_type", None)
+        if hasattr(alert_type, "value"):
+            alert_type = alert_type.value
+
+        alert_severity = getattr(alert, "severity", None)
+        if hasattr(alert_severity, "value"):
+            alert_severity = alert_severity.value
+
+        maps_url = ""
+        if latitude is not None and longitude is not None:
+            maps_url = make_google_maps_url(float(latitude), float(longitude))
+
+        message = (
+            "🚨 EMERGENCY ALERT 🚨\n"
+            f"Title:\n{alert.title}\n\n"
+            f"Message:\n{alert.message}\n\n"
+            f"Severity:\n{alert_severity}\n\n"
+            f"Type:\n{alert_type}\n\n"
+            f"Location:\n{location_text}\n"
+        )
+        if maps_url:
+            message += f"\nGPS:\n{latitude}, {longitude}\n\nGoogle Maps:\n{maps_url}"
+
+        active_phone_numbers = get_emergency_sms_recipients()
+        sms_result = send_sms_to_active_contacts(
+            build_sms_contacts(active_phone_numbers),
+            message,
+            limit=None,
+        )
+
+        notification_id = f"alert_{uuid.uuid4().hex}"
+        db.collection("notifications").document(notification_id).set({
+            "type": "alert",
+            "title": alert.title,
+            "message": message,
+            "alert_id": alert.id,
+            "status": "active",
+            "active_users_found": len(active_phone_numbers),
+            "sms_sent": sms_result.get("sent_count", 0),
+            "sms_failed": sms_result.get("failed_count", 0),
+        })
+
+        logger.info(
+            "Emergency notification started | "
+            f"Active users found: {len(active_phone_numbers)} | "
+            f"SMS targets: {len(active_phone_numbers)} | "
+            f"SMS sent: {sms_result.get('sent_count', 0)} | "
+            f"SMS failed: {sms_result.get('failed_count', 0)}"
+        )
+
+        return {"success": True, "alert_id": str(getattr(alert, "id", "")), "sms": sms_result}
+
+    async def cancel_alert_notification(self, alert) -> Dict[str, Any]:
+        """Alert cancellation does not require an external SMS operation."""
+
+        return {"success": True, "alert_id": str(getattr(alert, "id", ""))}
+
+
 class NotificationService:
     @staticmethod
     def send_email(to_email: str, subject: str, body: str) -> bool:
@@ -305,10 +603,11 @@ def send_emergency_notification(
     if location_details and location_details.get("maps_url"):
         full_message += f"\nLocation: {location_details.get('maps_url')}"
 
-    # SMS Dispatch to Active 10
     sms_summary = {}
-    if contacts and SMS_ENABLED:
-        sms_summary = send_sms_to_active_contacts(contacts, full_message)
+    if SMS_ENABLED:
+        configured_contacts = build_sms_contacts(get_configured_sms_recipients())
+        sms_contacts = configured_contacts + (contacts or [])
+        sms_summary = send_sms_to_active_contacts(sms_contacts, full_message, limit=None)
 
     telegram_status = False
     if TELEGRAM_ENABLED:
@@ -318,5 +617,5 @@ def send_emergency_notification(
         "status": "success",
         "alert_title": alert_title,
         "sms_dispatch": sms_summary,
-        "telegram_sent": telegram_status
+        "telegram_sent": telegram_status,
     }

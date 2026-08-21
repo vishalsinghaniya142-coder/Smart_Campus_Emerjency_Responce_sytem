@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 from app.utils.validators import (
     validate_name,
@@ -59,8 +59,7 @@ class RegisterRequest(AuthBase):
         examples=["vishal@example.com"],
     )
     phone_number: str = Field(
-    ...,
-    min_length=10,
+    default="",
     max_length=20,
     description="Registered mobile number of the user.",
     examples=["9876543210"],
@@ -150,12 +149,27 @@ class LoginRequest(AuthBase):
             "email": "vishal@example.com",
             "password": "password123"
         }
+
+    or
+
+        {
+            "phone_number": "+919876543210",
+            "password": "password123"
+        }
     """
 
-    email: EmailStr = Field(
-        ...,
+    email: Optional[EmailStr] = Field(
+        default=None,
         description="Registered user email address.",
         examples=["vishal@example.com"],
+    )
+
+    phone_number: Optional[str] = Field(
+        default=None,
+        min_length=10,
+        max_length=20,
+        description="Registered mobile number in international or local format.",
+        examples=["+919876543210", "9876543210"],
     )
 
     password: str = Field(
@@ -165,6 +179,18 @@ class LoginRequest(AuthBase):
         description="User's password.",
         examples=["password123"],
     )
+
+    @model_validator(mode="after")
+    def validate_identifier(self):
+        """Require at least one valid identifier, email or phone number."""
+
+        email_value = self.email.strip() if isinstance(self.email, str) else None
+        phone_value = self.phone_number.strip() if isinstance(self.phone_number, str) else None
+
+        if email_value or phone_value:
+            return self
+
+        raise ValueError("Either email or phone_number is required for login.")
 
 
 # ============================================================

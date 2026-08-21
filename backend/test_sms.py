@@ -46,6 +46,6 @@ def send_test_sms(phone_number: str, message: str):
 
 if __name__ == "__main__":
     # Yahan apna 10 digit ka actual mobile number daalein (+91 ke baad apna number)
-    MY_PHONE_NUMBER = "+919876543210"  # <-- APNA ACTUAL NUMBER YAHAN DALEIN
+    MY_PHONE_NUMBER = "+916393645985"
 
     send_test_sms(MY_PHONE_NUMBER, "🚨 Smart Campus Test: Emergency SMS Gateway working!")

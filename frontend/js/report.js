@@ -5,6 +5,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!form) return;
 
+    const getCurrentLocation = () => new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error("Geolocation is not supported by this browser."));
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                resolve({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                });
+            },
+            () => {
+                reject(new Error("Location permission is required to send an emergency report."));
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 0,
+            }
+        );
+    });
+
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
 
@@ -16,9 +40,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const title =
             document.getElementById("incident-title").value.trim();
 
-        const locationText =
-            document.getElementById("incident-location").value.trim();
-
         const description =
             document.getElementById("incident-description").value.trim();
 
@@ -28,53 +49,42 @@ document.addEventListener("DOMContentLoaded", () => {
         const token =
             localStorage.getItem("emergency_token");
 
-        // Login check
         if (!token) {
             alert("Please login first.");
             window.location.href = "login.html";
             return;
         }
 
-        if (!title || !locationText || !description) {
-            alert("Please fill all required fields.");
+        if (!title || !description) {
+            alert("Please fill the title and description.");
             return;
         }
 
         try {
             submitBtn.disabled = true;
+            submitBtn.textContent = "Getting location...";
+
+            const coordinates = await getCurrentLocation();
+
             submitBtn.textContent = "Submitting...";
 
-            /*
-             * Backend currently expects latitude/longitude.
-             * For now we use campus coordinates.
-             * Later we can connect browser GPS/maps here.
-             */
             const payload = {
                 incident_type: incidentType,
-
                 title: title,
-
                 description: description,
-
                 location: {
-                    latitude: 26.8467,
-                    longitude: 80.9462,
-                    address: locationText,
+                    latitude: coordinates.latitude,
+                    longitude: coordinates.longitude,
+                    address: "Auto-detected from browser GPS",
                     building: "",
                     floor: "",
                     room: ""
                 },
-
                 severity: severity,
-
                 images: []
             };
 
-            const response = await API.request(
-                "/incidents",
-                "POST",
-                payload
-            );
+            const response = await API.post("/incidents", payload);
 
             console.log(
                 "Incident created:",
@@ -82,7 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
             alert(
-                "Emergency report submitted successfully. Authorities have been notified."
+                `Emergency report submitted successfully. You earned ${response.data?.credits_awarded ?? 0} safety credits.`
             );
 
             form.reset();

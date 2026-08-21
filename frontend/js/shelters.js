@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const addForm = document.getElementById("add-shelter-form");
     const addStatus = document.getElementById("add-shelter-status");
+    let editingShelterId = null;
     const setLocation = (location) => {
         document.getElementById("shelter-latitude").value = location.lat;
         document.getElementById("shelter-longitude").value = location.lng;
@@ -28,9 +29,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         addStatus.textContent = "Saving shelter to Firebase...";
 
         try {
-            await API.request("/shelters", "POST", {
+            const shelterPayload = {
                 name: document.getElementById("shelter-name").value.trim(),
-                description: "Added from the SafeGuard shelter directory.",
+                description: "Added from the Suraksha_Setu shelter directory.",
                 shelter_type: "shelter",
                 status: document.getElementById("shelter-status").value,
                 location: {
@@ -44,8 +45,14 @@ document.addEventListener("DOMContentLoaded", async () => {
                     available: Number(document.getElementById("shelter-capacity").value)
                 },
                 amenities: {}
-            });
-            addStatus.textContent = "Shelter saved. Refreshing the Firebase directory...";
+            };
+            if (editingShelterId) {
+                await API.patch(`/shelters/${editingShelterId}`, shelterPayload);
+                addStatus.textContent = "Shelter updated. Refreshing the Firebase directory...";
+            } else {
+                await API.post("/shelters", shelterPayload);
+                addStatus.textContent = "Shelter saved. Refreshing the Firebase directory...";
+            }
             window.location.reload();
         } catch (error) {
             addStatus.textContent = error.message || "Unable to save shelter.";
@@ -75,6 +82,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                     <p class="shelter-status"><strong>Status:</strong> ${escapeHtml(shelter.availability || "Unknown")}</p>
                     ${shelter.address ? `<p><strong>Address:</strong> ${escapeHtml(shelter.address)}</p>` : ""}
                     ${shelter.description ? `<p class="shelter-description">${escapeHtml(shelter.description)}</p>` : ""}
+                    <button class="btn btn-outline edit-shelter-btn" type="button" data-shelter='${escapeHtml(JSON.stringify(shelter))}'>Edit shelter</button>
+                    <button class="btn btn-danger delete-shelter-btn" type="button" data-shelter-id="${escapeHtml(shelter.id)}"><i class="fas fa-trash"></i> Delete</button>
                     <button class="btn btn-primary directions-btn" type="button" data-destination="${destination}">Get Directions</button>
                 </article>`;
         }).join("");
@@ -83,6 +92,35 @@ document.addEventListener("DOMContentLoaded", async () => {
         grid.querySelectorAll(".directions-btn").forEach((button) => {
             button.addEventListener("click", () => {
                 window.open(`https://www.google.com/maps/dir/?api=1&destination=${button.dataset.destination}`, "_blank", "noopener");
+            });
+        });
+        grid.querySelectorAll(".edit-shelter-btn").forEach((button) => {
+            button.addEventListener("click", () => {
+                const shelter = JSON.parse(button.dataset.shelter);
+                editingShelterId = shelter.id;
+                document.getElementById("shelter-name").value = shelter.name || "";
+                document.getElementById("shelter-address").value = shelter.address || "";
+                document.getElementById("shelter-latitude").value = shelter.latitude || "";
+                document.getElementById("shelter-longitude").value = shelter.longitude || "";
+                document.getElementById("shelter-capacity").value = Number(String(shelter.capacity || "0").split("/").pop()) || 0;
+                document.getElementById("shelter-status").value = (shelter.availability || "Available").toLowerCase();
+                document.querySelector("#add-shelter-heading").textContent = "Update shelter";
+                addStatus.textContent = "Editing selected shelter.";
+                document.getElementById("add-shelter-heading").scrollIntoView({ behavior: "smooth" });
+            });
+        });
+        grid.querySelectorAll(".delete-shelter-btn").forEach((button) => {
+            button.addEventListener("click", async () => {
+                if (!confirm("Delete this shelter from the directory?")) return;
+                button.disabled = true;
+                try {
+                    await API.delete(`/shelters/${button.dataset.shelterId}`);
+                    button.closest(".shelter-card")?.remove();
+                    status.textContent = "Shelter deleted successfully.";
+                } catch (error) {
+                    button.disabled = false;
+                    addStatus.textContent = error.message || "Unable to delete shelter.";
+                }
             });
         });
     } catch (error) {

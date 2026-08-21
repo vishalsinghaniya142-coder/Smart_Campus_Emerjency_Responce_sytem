@@ -226,6 +226,8 @@ SAFETY_INSTRUCTIONS: dict[str, list[str]] = {
     ],
     "unknown": [
         "Stay calm and move to a safe area.",
+        "Keep your phone charged and share your location with a trusted person.",
+        "Do not enter damaged buildings or touch fallen electrical wires.",
         "Use the SOS button to alert campus security.",
         "Follow instructions from campus staff.",
     ],

@@ -5,7 +5,6 @@ import {
 import {
     getAuth,
     GoogleAuthProvider,
-    GithubAuthProvider,
     RecaptchaVerifier,
     signInWithPopup,
     signInWithPhoneNumber,
@@ -33,23 +32,13 @@ import {
 // ======================================================
 
 const firebaseConfig = {
-
-    apiKey: "PASTE_YOUR_FIREBASE_API_KEY",
-
-    authDomain:
-        "smart-campus-ai-emergency.firebaseapp.com",
-
-    projectId:
-        "smart-campus-ai-emergency",
-
-    storageBucket:
-        "PASTE_YOUR_STORAGE_BUCKET",
-
-    messagingSenderId:
-        "PASTE_YOUR_MESSAGING_SENDER_ID",
-
-    appId:
-        "PASTE_YOUR_FIREBASE_APP_ID"
+    apiKey: "AIzaSyDrVpC3bOzwX6U5BiZ2nzQJISyuuWOqfak",
+    authDomain: "smart-campus-ai-emergency.firebaseapp.com",
+    projectId: "smart-campus-ai-emergency",
+    storageBucket: "smart-campus-ai-emergency.firebasestorage.app",
+    messagingSenderId: "682147663086",
+    appId: "1:682147663086:web:8a0e651d3547725cebb7ff",
+    measurementId: "G-ZFNDHKVRH6"
 };
 
 
@@ -57,11 +46,53 @@ const firebaseConfig = {
 // INITIALIZE FIREBASE
 // ======================================================
 
-const firebaseApp =
-    initializeApp(firebaseConfig);
+let auth = null;
+let firebaseEnabled = false;
 
-const auth =
-    getAuth(firebaseApp);
+function ensureSupportReference() {
+    let reference = localStorage.getItem("support_reference");
+    if (!reference) {
+        const suffix = typeof crypto !== "undefined" && crypto.randomUUID
+            ? crypto.randomUUID().split("-")[0].toUpperCase()
+            : Math.random().toString(36).slice(2, 8).toUpperCase();
+        reference = `SS-${suffix}`;
+        localStorage.setItem("support_reference", reference);
+    }
+    return reference;
+}
+
+const hasFirebaseWebConfig = Boolean(
+    firebaseConfig.apiKey &&
+    firebaseConfig.authDomain &&
+    firebaseConfig.projectId &&
+    firebaseConfig.appId
+);
+
+if (hasFirebaseWebConfig) {
+    try {
+        const firebaseApp = initializeApp(firebaseConfig);
+        auth = getAuth(firebaseApp);
+        firebaseEnabled = true;
+    } catch (error) {
+        console.warn("Firebase initialization failed; backend email auth remains active.", error);
+        auth = null;
+        firebaseEnabled = false;
+    }
+} else {
+    console.warn("Firebase web configuration is missing; using backend email auth only.");
+    auth = null;
+    firebaseEnabled = false;
+}
+
+function requireFirebaseAuth() {
+    if (!auth || !firebaseEnabled) {
+        throw new Error(
+            "Firebase Auth is not configured for this app. Please use email login or configure Firebase web SDK settings in the project."
+        );
+    }
+
+    return auth;
+}
 
 
 // ======================================================
@@ -74,10 +105,6 @@ const googleProvider =
 googleProvider.setCustomParameters({
     prompt: "select_account"
 });
-
-
-const githubProvider =
-    new GithubAuthProvider();
 
 
 // ======================================================
@@ -146,32 +173,75 @@ async function exchangeToken(user) {
         "profileProvider",
         user.providerData?.[0]?.providerId || "firebase"
     );
+    ensureSupportReference();
 
     return data;
 }
 
 
 // ======================================================
-// EMAIL LOGIN
+// EMAIL LOGIN (Backend-based)
 // ======================================================
 
 async function loginWithEmail(
-    email,
+    emailOrPhone,
     password
 ) {
 
-    const credential =
-        await signInWithEmailAndPassword(
-            auth,
-            email,
-            password
+    const identifier =
+        String(emailOrPhone || "").trim();
+
+    if (!identifier) {
+        throw new Error("Please enter your email or phone number.");
+    }
+
+    const payload = identifier.includes("@")
+        ? { email: identifier, password }
+        : { phone_number: identifier, password };
+
+    const response =
+        await API.post(
+            "/auth/login",
+            payload
         );
 
-    await exchangeToken(
-        credential.user
+    const data =
+        response.data || response;
+
+    if (!data.access_token) {
+
+        throw new Error(
+            "Backend authentication token was not generated."
+        );
+    }
+
+    localStorage.setItem(
+        "emergency_token",
+        data.access_token
     );
 
-    return credential.user;
+    if (data.user) {
+
+        localStorage.setItem(
+            "profileName",
+            data.user.name ||
+            identifier.split("@")[0] ||
+            "Campus User"
+        );
+
+        localStorage.setItem(
+            "profileEmail",
+            data.user.email || (identifier.includes("@") ? identifier : "")
+        );
+
+        localStorage.setItem(
+            "profileProvider",
+            "email"
+        );
+        ensureSupportReference();
+    }
+
+    return data;
 }
 
 
@@ -185,9 +255,34 @@ async function registerWithEmail(
     password
 ) {
 
+    if (!firebaseEnabled) {
+        const response = await API.post(
+            "/auth/register",
+            {
+                name,
+                email,
+                password,
+                phone_number: "",
+                role: "student"
+            }
+        );
+
+        const data = response.data || response;
+        const user = data.user || data;
+
+        if (!user) {
+            throw new Error("User registration failed on the backend.");
+        }
+
+        const login = await loginWithEmail(email, password);
+        return login.user || user;
+    }
+
+    const firebaseAuth = requireFirebaseAuth();
+
     const credential =
         await createUserWithEmailAndPassword(
-            auth,
+            firebaseAuth,
             email,
             password
         );
@@ -213,30 +308,16 @@ async function registerWithEmail(
 
 async function loginWithGoogle() {
 
+    if (!firebaseEnabled) {
+        throw new Error("Google sign-in is unavailable because Firebase Auth is not configured.");
+    }
+
+    const firebaseAuth = requireFirebaseAuth();
+
     const result =
         await signInWithPopup(
-            auth,
+            firebaseAuth,
             googleProvider
-        );
-
-    await exchangeToken(
-        result.user
-    );
-
-    return result.user;
-}
-
-
-// ======================================================
-// GITHUB LOGIN
-// ======================================================
-
-async function loginWithGithub() {
-
-    const result =
-        await signInWithPopup(
-            auth,
-            githubProvider
         );
 
     await exchangeToken(
@@ -253,6 +334,12 @@ async function loginWithGithub() {
 
 function createRecaptcha() {
 
+    if (!firebaseEnabled) {
+        throw new Error("Phone OTP is unavailable because Firebase Auth is not configured.");
+    }
+
+    const firebaseAuth = requireFirebaseAuth();
+
     if (
         window.recaptchaVerifier
     ) {
@@ -261,7 +348,7 @@ function createRecaptcha() {
 
     window.recaptchaVerifier =
         new RecaptchaVerifier(
-            auth,
+            firebaseAuth,
             "recaptcha-container",
             {
                 size: "invisible",
@@ -288,12 +375,14 @@ async function sendPhoneOTP(
     phoneNumber
 ) {
 
+    const firebaseAuth = requireFirebaseAuth();
+
     const verifier =
         createRecaptcha();
 
     const confirmation =
         await signInWithPhoneNumber(
-            auth,
+            firebaseAuth,
             phoneNumber,
             verifier
         );
@@ -339,8 +428,10 @@ async function forgotPassword(
     email
 ) {
 
+    const firebaseAuth = requireFirebaseAuth();
+
     await sendPasswordResetEmail(
-        auth,
+        firebaseAuth,
         email
     );
 
@@ -354,7 +445,9 @@ async function forgotPassword(
 
 async function logout() {
 
-    await signOut(auth);
+    if (auth) {
+        await signOut(auth);
+    }
 
     API.clearSession();
 
@@ -367,14 +460,14 @@ async function logout() {
 // AUTH STATE
 // ======================================================
 
-onAuthStateChanged(
-    auth,
-    user => {
-
-        window.currentFirebaseUser =
-            user || null;
-    }
-);
+if (auth) {
+    onAuthStateChanged(
+        auth,
+        user => {
+            window.currentFirebaseUser = user || null;
+        }
+    );
+}
 
 
 // ======================================================
@@ -385,13 +478,16 @@ window.Auth = {
 
     auth,
 
+    firebaseEnabled,
+
+    isFirebasePhoneLoginAvailable: Boolean(auth && firebaseEnabled),
+
     loginWithEmail,
 
     registerWithEmail,
 
     loginWithGoogle,
 
-    loginWithGithub,
 
     sendPhoneOTP,
 

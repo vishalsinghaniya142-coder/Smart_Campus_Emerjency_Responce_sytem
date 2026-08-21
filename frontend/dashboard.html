@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - SafeGuard</title>
+    <title>Dashboard - Suraksha_Setu</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/sidebar.css">
     <link rel="stylesheet" href="css/dashboard.css">
@@ -68,6 +68,7 @@
                     <span class="click-hint">Click to view details &rarr;</span>
                 </div>
             </div>
+
         </div>
 
         <section class="sms-settings-panel" aria-labelledby="sms-settings-heading">
@@ -76,24 +77,24 @@
                     <p class="settings-eyebrow">Notification settings</p>
                     <h2 id="sms-settings-heading">SMS Gateway Configuration</h2>
                 </div>
-                <span class="settings-badge">Demo configuration</span>
+                <span class="settings-badge">Server-controlled</span>
             </div>
             <form id="sms-settings-form" class="sms-settings-form">
                 <label>Server address
-                    <input id="sms-server" type="text" value="api.sms-gate.app:443" required>
+                    <input id="sms-server" type="text" value="backend/.env" readonly>
                 </label>
                 <label>User name
-                    <input id="sms-username" type="text" value="-EVLMS" required>
+                    <input id="sms-username" type="text" value="configured on server" readonly>
                 </label>
                 <label>Password
-                    <input id="sms-password" type="password" value="-itocm7jdwizxm" required>
+                    <input id="sms-password" type="password" value="" readonly>
                 </label>
                 <label>Device ID
-                    <input id="sms-device-id" type="text" value="dgQAJSHKzJ90WQCtjvsJi" required>
+                    <input id="sms-device-id" type="text" value="configured on server" readonly>
                 </label>
-                <button class="btn btn-primary" type="submit">Save configuration</button>
+                <button class="btn btn-primary" type="submit">View backend settings</button>
             </form>
-            <p id="sms-settings-status" class="sms-settings-status" role="status"></p>
+            <p id="sms-settings-status" class="sms-settings-status" role="status">Actual SMS delivery is configured in backend/.env on the server and is not stored in the browser.</p>
         </section>
 
         <!-- Recent Activity Feed -->
@@ -108,7 +109,7 @@
     </main>
     <script src="js/api.js"></script>
     <script src="js/location.js"></script>
-    <script src="js/main.js"></script>
-    <script src="js/dashboard.js?v=4"></script>
+    <script src="js/main.js?v=3"></script>
+    <script src="js/dashboard.js?v=6"></script>
 </body>
 </html>

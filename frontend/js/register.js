@@ -10,8 +10,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const name = document.getElementById("name").value.trim();
         const email = document.getElementById("email").value.trim();
+        const phone = document.getElementById("phone").value.trim();
         const password = document.getElementById("password").value;
         const submitButton = registerForm.querySelector("button[type='submit']");
+
+        if (!phone) {
+            alert("Phone number is required so emergency alerts can contact you.");
+            return;
+        }
 
         if (submitButton) {
             submitButton.disabled = true;
@@ -19,10 +25,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            const response = await API.request(
+            const response = await API.post(
                 "/auth/register",
-                "POST",
-                { name, email, password, role: "student" }
+                { name, email, password, phone_number: phone, role: "student" }
             );
 
             const data = response.data || response;

@@ -267,6 +267,7 @@ async def update_profile(
     allowed_fields = {
         "name",
         "email",
+        "phone_number",
     }
 
     unsupported_fields = (
@@ -361,6 +362,41 @@ async def update_profile(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=str(exc),
             ) from exc
+
+    # --------------------------------------------------------
+    # Phone number
+    # --------------------------------------------------------
+
+    if "phone_number" in payload:
+
+        phone_number = payload.get(
+            "phone_number"
+        )
+
+        if not isinstance(
+            phone_number,
+            str,
+        ):
+
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Phone number must be a string.",
+            )
+
+        normalized_phone = phone_number.strip()
+        if not normalized_phone:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Phone number cannot be empty.",
+            )
+
+        if len(normalized_phone) < 10 or len(normalized_phone) > 20:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Phone number must be between 10 and 20 characters.",
+            )
+
+        updates["phone_number"] = normalized_phone
 
     # --------------------------------------------------------
     # Make sure something remains after validation.

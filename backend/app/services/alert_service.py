@@ -256,6 +256,7 @@ def get_alert_notification_service() -> Optional[
 async def create_alert(
     payload: AlertCreateRequest,
     creator_id: str,
+    send_sms: bool = True,
 ) -> Alert:
     """
     Create and persist a new emergency alert.
@@ -355,7 +356,7 @@ async def create_alert(
         get_alert_notification_service()
     )
 
-    if notification_service is not None:
+    if notification_service is not None and send_sms:
 
         try:
 
@@ -364,14 +365,6 @@ async def create_alert(
             )
 
         except Exception:
-            # ------------------------------------------------
-            # Alert already exists in database.
-            #
-            # Notification failure should not silently remove
-            # the emergency alert.
-            #
-            # Logging can be added later.
-            # ------------------------------------------------
             pass
 
     return stored_alert

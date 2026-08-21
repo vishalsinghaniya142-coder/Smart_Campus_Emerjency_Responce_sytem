@@ -17,7 +17,15 @@ const NotificationSystem = {
     triggerSOS() {
         LocationService.getUserLocation().then(loc => {
             this.sendAlert("SOS SENT!", `Help is on the way to Lat: ${loc.lat.toFixed(4)}, Lng: ${loc.lng.toFixed(4)}`);
-            API.request('/sos', 'POST', loc);
+            API.post('/sos', {
+                location: {
+                    latitude: loc.lat,
+                    longitude: loc.lng
+                },
+                message: "Emergency SOS"
+            }).catch(error => {
+                console.error("SOS request failed:", error);
+            });
         }).catch(err => {
             this.sendAlert("SOS SENT!", "Location unavailable. Defaulting to registered address.");
         });

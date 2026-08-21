@@ -1,7 +1,8 @@
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, status
-
+from firebase_admin import auth as firebase_auth
+from app.utils.jwt_handler import create_access_token
 from app.schemas.auth_schema import (
     LoginRequest,
     RegisterRequest,
@@ -176,6 +177,9 @@ async def login(
             detail="Unable to authenticate user.",
         ) from exc
 
+    print(f"[LOGIN ROUTE] Successfully authenticated user for {payload.email}")
+    print(f"[LOGIN ROUTE] Result type: {type(result)}, Keys: {result.keys() if isinstance(result, dict) else 'N/A'}")
+
     # --------------------------------------------------------
     # Expected service result
     # --------------------------------------------------------
@@ -223,6 +227,96 @@ async def login(
         message="Login successful.",
         token_type="bearer",
     )
+
+
+# ============================================================
+# FIREBASE LOGIN
+# ============================================================
+
+@router.post(
+    "/firebase",
+    status_code=status.HTTP_200_OK,
+)
+async def firebase_login(
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    """
+    Authenticate using Firebase ID token.
+
+    Endpoint
+    --------
+    POST /auth/firebase
+
+    Request
+    -------
+    {
+        "id_token": "<firebase_id_token>"
+    }
+
+    Flow
+    ----
+        Frontend (Firebase Auth)
+            |
+            v
+        Firebase ID Token
+            |
+            v
+        POST /auth/firebase
+            |
+            v
+        Verify ID Token
+            |
+            v
+        Create FastAPI JWT
+            |
+            v
+        Frontend
+    """
+
+    id_token = payload.get("id_token")
+
+    if not id_token:
+        raise HTTPException(
+            status_code=401,
+            detail="Firebase ID token is required.",
+        )
+
+    try:
+        decoded = firebase_auth.verify_id_token(
+            id_token
+        )
+
+        user_id = decoded.get("uid")
+        email = decoded.get("email", "")
+        name = (
+            decoded.get("name")
+            or email.split("@")[0]
+            or "Campus User"
+        )
+
+        access_token = create_access_token(
+            user_id=user_id,
+            email=email,
+            role="student",
+        )
+
+        return authentication_response(
+            user={
+                "id": user_id,
+                "name": name,
+                "email": email,
+                "role": "student",
+            },
+            access_token=access_token,
+            message="Firebase login successful.",
+            token_type="bearer",
+        )
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=401,
+            detail=f"Firebase authentication failed: {exc}",
+        ) from exc
 
 
 # ============================================================

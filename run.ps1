@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [int]$BackendPort = 8000,
+    [int]$BackendPort = 8001,
     [int]$FrontendPort = 5500,
     [switch]$NoBrowser
 )
@@ -11,6 +11,32 @@ $BackendRoot = Join-Path $ProjectRoot "backend"
 $FrontendRoot = Join-Path $ProjectRoot "frontend"
 $BackendUrl = "http://127.0.0.1:$BackendPort"
 $FrontendUrl = "http://127.0.0.1:$FrontendPort/index.html"
+
+function Import-DotEnv {
+    $envPath = Join-Path $BackendRoot ".env"
+    if (-not (Test-Path $envPath)) {
+        return
+    }
+
+    foreach ($line in (Get-Content -LiteralPath $envPath -Encoding UTF8)) {
+        $trimmed = $line.Trim()
+        if (-not $trimmed -or $trimmed.StartsWith("#")) {
+            continue
+        }
+
+        $parts = $trimmed.Split("=", 2)
+        if ($parts.Count -ne 2) {
+            continue
+        }
+
+        $name = $parts[0].Trim()
+        $value = $parts[1].Trim()
+        if (($value.StartsWith('"') -and $value.EndsWith('"')) -or ($value.StartsWith("'") -and $value.EndsWith("'"))) {
+            $value = $value.Substring(1, $value.Length - 2)
+        }
+        [Environment]::SetEnvironmentVariable($name, $value, "Process")
+    }
+}
 
 function Find-Python {
     $venvPython = Join-Path $BackendRoot ".venv\Scripts\python.exe"
@@ -42,6 +68,7 @@ function Stop-ChildProcess {
 $python = Find-Python
 $backendProcess = $null
 $frontendProcess = $null
+Import-DotEnv
 
 try {
     Write-Host "Starting FastAPI backend on $BackendUrl ..."

@@ -40,6 +40,7 @@ from app.services.incident_service import (
     update_incident,
 )
 from app.services.alert_service import create_alert
+from app.services.auth_service import award_user_credits
 
 from app.utils.response import (
     created_response,
@@ -170,6 +171,11 @@ async def report_incident(
             detail="Unable to create incident.",
         ) from exc
 
+    try:
+        awarded_user = await award_user_credits(reporter_id, 100)
+    except Exception:
+        awarded_user = None
+
     # Keep campus-wide alert delivery synchronized with incident reports.
     try:
         alert_type_map = {
@@ -205,6 +211,7 @@ async def report_incident(
                 ),
             ),
             creator_id=reporter_id,
+            send_sms=False,
         )
     except Exception as exc:
         raise HTTPException(
@@ -222,6 +229,8 @@ async def report_incident(
 
     response_payload = response_data.model_dump(mode="json")
     response_payload["alert_id"] = alert.id
+    response_payload["credits_awarded"] = 100 if awarded_user else 0
+    response_payload["total_credits"] = awarded_user.credits if awarded_user else None
 
     return created_response(
         data=response_payload,

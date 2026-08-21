@@ -12,6 +12,18 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 .shelter-card p { margin: 5px 0; color: var(--text-light); }
+.shelter-form-panel { max-width: 980px; margin: 1.25rem 0 2rem; padding: 1.5rem; background: rgba(255,255,255,.86); border: 1px solid var(--border-color); border-radius: 10px; box-shadow: var(--shadow-soft); }
+.shelter-form-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.shelter-eyebrow { margin: 0; color: var(--primary-color); font-size: .72rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.shelter-form-heading h2 { margin: .2rem 0 0; }
+.shelter-form { display: grid; grid-template-columns: repeat(2, 1fr); gap: .75rem; margin-top: 1rem; }
+.shelter-form input, .shelter-form select { min-width: 0; padding: .75rem; border: 1px solid var(--border-color); border-radius: 6px; }
+.shelter-form input:focus, .shelter-form select:focus { outline: 3px solid rgba(15,118,110,.14); border-color: var(--primary-color); }
+.shelter-form button { grid-column: 1 / -1; justify-self: start; }
+.shelter-form-status { min-height: 1.2rem; margin: .75rem 0 0; color: var(--text-light); font-size: .85rem; }
+.edit-shelter-btn { margin-right: .5rem; }
+.delete-shelter-btn { margin-right: .5rem; }
+@media (max-width: 700px) { .shelter-form-panel { margin-right: 0; } .shelter-form { grid-template-columns: 1fr; } .shelter-form-heading { align-items: flex-start; flex-direction: column; } .shelter-form button { width: 100%; } .edit-shelter-btn { margin: 0 0 .5rem; } }
 .shelter-card h3 { margin-bottom: 0.75rem; }
 .shelter-card .shelter-description { margin: 0.8rem 0; color: var(--text-dark); }
 .shelter-status { color: var(--success-color); font-weight: 600; }

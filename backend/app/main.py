@@ -24,6 +24,7 @@ from app.services.auth_service import configure_user_repository
 from app.services.database.users import FirebaseUserRepository
 from app.services.incident_service import (
     configure_incident_repository,
+    configure_incident_notification_service,
 )
 
 from app.services.database.incidents import (
@@ -44,6 +45,7 @@ from app.services.notification_service import SmsGatewayNotificationService
 from app.routes.image_analysis import (
     router as image_analysis_router,
 )
+from app.routes.notifications import router as notifications_router
 
 
 # ============================================================
@@ -164,6 +166,12 @@ async def lifespan(app: FastAPI):
             sos_repository
         )
 
+        from app.services.sos_service import configure_sos_notification_service
+
+        configure_sos_notification_service(
+            SmsGatewayNotificationService()
+        )
+
         alert_repository = FirebaseAlertRepository()
 
         configure_alert_repository(
@@ -171,6 +179,9 @@ async def lifespan(app: FastAPI):
         )
 
         configure_alert_notification_service(
+            SmsGatewayNotificationService()
+        )
+        configure_incident_notification_service(
             SmsGatewayNotificationService()
         )
 
@@ -456,6 +467,11 @@ app.include_router(
     image_analysis_router,
     prefix="/image-analysis",
     tags=["Image Analysis"],
+)
+
+app.include_router(
+    notifications_router,
+    prefix="/notifications",
 )
 
 

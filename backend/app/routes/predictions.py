@@ -1,6 +1,8 @@
 from typing import Any
 
+import requests
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
 
 from app.dependencies import get_current_user
 from app.schemas.prediction_schema import (
@@ -9,9 +11,14 @@ from app.schemas.prediction_schema import (
     build_prediction_response,
     prediction_request_to_data,
 )
+from app.services.prediction_service import predict_pincode_risk
 
 
 router = APIRouter()
+
+
+class LocationPredictionRequest(BaseModel):
+    location: str = Field(..., min_length=2, max_length=120)
 
 
 @router.post(
@@ -58,3 +65,25 @@ async def create_prediction(
             "Connect Member 3 prediction service."
         ),
     )
+
+
+@router.post(
+    "/analyze",
+    status_code=status.HTTP_200_OK,
+)
+async def analyze_location_prediction(
+    payload: LocationPredictionRequest,
+) -> dict[str, Any]:
+    """Resolve a pincode and run the existing risk engine on live data."""
+
+    try:
+        return await predict_pincode_risk(payload.location)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except (requests.RequestException, RuntimeError) as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Real prediction service unavailable: {exc}",
+        ) from exc

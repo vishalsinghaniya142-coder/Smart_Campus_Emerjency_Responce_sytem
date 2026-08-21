@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>My Profile - SafeGuard</title>
+    <title>My Profile - Suraksha_Setu</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/sidebar.css">
     <link rel="stylesheet" href="css/profile.css">
@@ -52,15 +52,34 @@
                 <div class="detail-grid">
                     <div class="detail-item"><i class="fas fa-user-tag"></i> <strong>Username:</strong> <span id="disp-username">@viratsaini</span></div>
                     <div class="detail-item"><i class="fas fa-briefcase"></i> <strong>Role:</strong> <span id="disp-role">Engineering Student</span></div>
-                    <div class="detail-item"><i class="fas fa-laptop-code"></i> <strong>Branch:</strong> <span id="disp-branch">Computer Science</span></div>
-                    <div class="detail-item"><i class="fas fa-door-closed"></i> <strong>Hostel Room No:</strong> <span id="disp-hostel">B-302</span></div>
                     <div class="detail-item"><i class="fas fa-phone"></i> <strong>Phone Number:</strong> <span id="disp-phone">+91 9876543210</span></div>
                     <div class="detail-item"><i class="fas fa-map-marker-alt"></i> <strong>Address:</strong> <span id="disp-address">Campus Hostel</span></div>
+                    <div class="detail-item"><i class="fas fa-ticket-alt"></i> <strong>Help Reference:</strong> <span id="disp-support-reference">SS-PENDING</span></div>
                 </div>
                 <div class="bio-section">
                     <strong><i class="fas fa-info-circle"></i> Bio:</strong>
                     <p id="disp-bio">Passionate about full-stack development and community projects.</p>
                 </div>
+                <div class="credits-progress" aria-label="Safety credits progress">
+                    <div class="credits-heading">
+                        <div>
+                            <span class="credits-kicker"><i class="fas fa-star"></i> Safety rewards</span>
+                            <strong>Preparedness Credits</strong>
+                        </div>
+                        <strong class="credits-total"><span id="credits-value">0</span> <small>credits</small></strong>
+                    </div>
+                    <div class="credits-track"><span id="credits-bar"></span></div>
+                    <p id="credits-message"><i class="fas fa-trophy"></i> Submit a verified emergency report to earn 100 credits.</p>
+                </div>
+                <section class="levels-panel" aria-label="Safety reward levels">
+                    <div class="levels-title"><div><span class="credits-kicker"><i class="fas fa-ranking-star"></i> Progress path</span><strong>Levels & Rewards</strong></div><span id="current-level" class="level-badge">Bronze</span></div>
+                    <div class="levels-grid">
+                        <div class="level-item bronze-level"><i class="fas fa-medal"></i><strong>Bronze</strong><span>0 - 499 XP</span><small>100 credits per alert</small></div>
+                        <div class="level-item silver-level"><i class="fas fa-medal"></i><strong>Silver</strong><span>500 - 1,499 XP</span><small>Active supporter</small></div>
+                        <div class="level-item gold-level"><i class="fas fa-medal"></i><strong>Gold</strong><span>1,500+ XP</span><small>Campus safety hero</small></div>
+                    </div>
+                    <p id="level-progress-message" class="level-progress-message">Your next verified alert adds 100 credits.</p>
+                </section>
             </div>
 
             <!-- EDIT MODE GRID (Hidden by default) -->
@@ -68,8 +87,6 @@
                 <div class="detail-grid">
                     <div class="form-group"><label>Username</label><input type="text" id="edit-username" class="edit-input-grid"></div>
                     <div class="form-group"><label>Role</label><input type="text" id="edit-role" class="edit-input-grid"></div>
-                    <div class="form-group"><label>Branch</label><input type="text" id="edit-branch" class="edit-input-grid"></div>
-                    <div class="form-group"><label>Hostel Room No</label><input type="text" id="edit-hostel" class="edit-input-grid"></div>
                     <div class="form-group"><label>Phone Number</label><input type="text" id="edit-phone" class="edit-input-grid"></div>
                     <div class="form-group"><label>Address</label><input type="text" id="edit-address" class="edit-input-grid"></div>
                 </div>
@@ -88,7 +105,7 @@
     </main>
 
     <script src="js/api.js"></script>
-    <script src="js/main.js"></script>
-    <script src="js/profile.js?v=2"></script>
+    <script src="js/main.js?v=3"></script>
+    <script src="js/profile.js?v=3"></script>
 </body>
 </html>

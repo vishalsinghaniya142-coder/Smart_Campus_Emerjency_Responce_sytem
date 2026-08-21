@@ -1,23 +1,43 @@
 // js/chatbot.js
 document.addEventListener("DOMContentLoaded", () => {
-    const input = document.querySelector("input[type='text']");
-    const sendBtn = document.querySelector(".btn-primary");
-    const chatWindow = document.querySelector(".chat-window");
+    const input = document.getElementById("chat-input");
+    const sendBtn = document.getElementById("chat-send");
+    const chatWindow = document.querySelector(".chat-messages");
 
-    function sendMessage() {
+    async function sendMessage() {
         const text = input.value.trim();
         if (!text) return;
 
-        // User message
-        chatWindow.innerHTML += `<p style="background: var(--primary-color); color: white; padding: 10px; border-radius: 8px; width: fit-content; margin-bottom: 10px; margin-left: auto;">${text}</p>`;
+        const userMessage = document.createElement("p");
+        userMessage.className = "user-message";
+        userMessage.textContent = text;
+        chatWindow.appendChild(userMessage);
         input.value = '';
         chatWindow.scrollTop = chatWindow.scrollHeight;
+        sendBtn.disabled = true;
 
-        // Bot reply simulation
-        setTimeout(() => {
-            chatWindow.innerHTML += `<p style="background: #e2e8f0; padding: 10px; border-radius: 8px; width: fit-content; margin-bottom: 10px;">I have noted that. Please stay safe. If it's a severe emergency, press the SOS button.</p>`;
+        try {
+            const response = await API.post("/chatbot", { message: text });
+            const data = response.data || response;
+            const botMessage = document.createElement("div");
+            botMessage.className = "bot-response";
+            botMessage.innerHTML = `<strong>${data.emergency_type || "Safety guidance"} · ${data.severity || "medium"}</strong><p>${escapeHtml(data.message || "Please stay calm and follow these steps.")}</p><ul>${(data.instructions || []).map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+            chatWindow.appendChild(botMessage);
+        } catch (error) {
+            const errorMessage = document.createElement("p");
+            errorMessage.className = "bot-message error-message";
+            errorMessage.textContent = error.message || "Safety assistant is temporarily unavailable. Use SOS for immediate danger.";
+            chatWindow.appendChild(errorMessage);
+        } finally {
+            sendBtn.disabled = false;
             chatWindow.scrollTop = chatWindow.scrollHeight;
-        }, 1000);
+        }
+    }
+
+    function escapeHtml(value) {
+        const element = document.createElement("div");
+        element.textContent = String(value ?? "");
+        return element.innerHTML;
     }
 
     if (sendBtn && input) {

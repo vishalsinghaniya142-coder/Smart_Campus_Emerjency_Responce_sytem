@@ -38,6 +38,7 @@ from app.services.alert_service import (
     list_alerts,
     update_alert,
 )
+from app.services.auth_service import award_user_credits
 
 from app.utils.response import (
     created_response,
@@ -143,10 +144,18 @@ async def create_alert_route(
         alert
     )
 
+    awarded_user = None
+    try:
+        awarded_user = await award_user_credits(creator_id, 100)
+    except Exception:
+        pass
+
+    response_payload = response_data.model_dump(mode="json")
+    response_payload["credits_awarded"] = 100 if awarded_user else 0
+    response_payload["total_credits"] = awarded_user.credits if awarded_user else None
+
     return created_response(
-        data=response_data.model_dump(
-            mode="json"
-        ),
+        data=response_payload,
         message="Alert created successfully.",
     )
 

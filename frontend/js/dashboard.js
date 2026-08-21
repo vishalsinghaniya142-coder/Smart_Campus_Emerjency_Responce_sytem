@@ -23,10 +23,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         const results = await Promise.allSettled([
             API.request("/users/profile"),
             API.request(`/shelters/nearest?latitude=${location.latitude}&longitude=${location.longitude}&limit=1`),
-            API.request("/alerts?active_only=true&limit=100")
+            API.request("/alerts?active_only=true&limit=100"),
+            API.request("/notifications?limit=20")
         ]);
 
-        const [profileResult, shelterResult, alertsResult] = results;
+        const [profileResult, shelterResult, alertsResult, notificationsResult] = results;
         if (profileResult.status === "fulfilled") {
             const profile = profileResult.value.data || profileResult.value;
             document.getElementById("dash-username").textContent = profile.name || "User";
@@ -52,6 +53,14 @@ document.addEventListener("DOMContentLoaded", async () => {
             document.getElementById("alerts-text").textContent = "Unavailable";
         }
 
+        if (notificationsResult.status === "fulfilled") {
+            const notifications = notificationsResult.value.data || [];
+            const latestSos = notifications.find(notification => notification.type === "sos");
+            if (latestSos) {
+                addActivity(`🚨 ${latestSos.title}: ${latestSos.message}`);
+            }
+        }
+
         addActivity("Dashboard data synchronized from the backend.");
     }
 
@@ -65,27 +74,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         password: document.getElementById("sms-password"),
         deviceId: document.getElementById("sms-device-id")
     };
-    const storedSmsSettings = localStorage.getItem("sms_gateway_settings");
-    if (storedSmsSettings) {
-        try {
-            const values = JSON.parse(storedSmsSettings);
-            Object.entries(smsFields).forEach(([key, field]) => {
-                if (values[key]) field.value = values[key];
-            });
-        } catch (_) {
-            localStorage.removeItem("sms_gateway_settings");
-        }
-    }
+
+    if (smsFields.server) smsFields.server.value = "backend/.env";
+    if (smsFields.username) smsFields.username.value = "configured on server";
+    if (smsFields.password) smsFields.password.value = "";
+    if (smsFields.deviceId) smsFields.deviceId.value = "configured on server";
+
     smsSettingsForm?.addEventListener("submit", (event) => {
         event.preventDefault();
-        localStorage.setItem("sms_gateway_settings", JSON.stringify({
-            server: smsFields.server.value.trim(),
-            username: smsFields.username.value.trim(),
-            password: smsFields.password.value,
-            deviceId: smsFields.deviceId.value.trim()
-        }));
-        smsSettingsStatus.textContent = "Configuration saved on this browser. Backend SMS sending still uses backend/.env.";
-        addActivity("SMS gateway configuration saved locally.");
+        smsSettingsStatus.textContent = "Actual SMS delivery is configured in backend/.env on the server. Browser storage is not used for SMS credentials.";
+        addActivity("SMS gateway settings remain server-controlled.");
     });
 
     // 2. Risk Level Logic (Change colors dynamically)
@@ -134,14 +132,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         imageResult.textContent = "Analyzing uploaded image...";
 
         try {
-            const token = localStorage.getItem("emergency_token");
-            const response = await fetch("http://127.0.0.1:8000/image-analysis", {
+            const response = await API.request("/image-analysis", {
                 method: "POST",
-                headers: token ? { Authorization: `Bearer ${token}` } : {},
                 body: formData
             });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.detail || "Image analysis failed.");
+            const data = response.data || response;
             const level = data.risk_level || "moderate";
             riskSelector.value = level;
             updateRiskColor(level);
@@ -157,6 +152,34 @@ document.addEventListener("DOMContentLoaded", async () => {
     // 3. EMERGENCY SOS BUTTON LOGIC
     const sosBtn = document.getElementById("btn-sos");
     if (sosBtn) {
+        function showWhatsAppAction(latitude, longitude) {
+            let recipient = localStorage.getItem("emergency_whatsapp_recipient") || "";
+            if (!recipient) {
+                recipient = prompt("Enter the emergency member's WhatsApp number with country code:", "+91");
+                if (recipient) {
+                    recipient = recipient.replace(/\D/g, "");
+                    if (recipient.length < 10) recipient = "";
+                    if (recipient) localStorage.setItem("emergency_whatsapp_recipient", recipient);
+                }
+            }
+
+            if (!recipient) return;
+
+            const message = [
+                "EMERGENCY SOS from Suraksha_Setu",
+                "Please respond immediately.",
+                `Location: https://www.google.com/maps?q=${latitude},${longitude}`
+            ].join("\n");
+            const action = document.createElement("a");
+            action.href = `https://wa.me/${recipient}?text=${encodeURIComponent(message)}`;
+            action.target = "_blank";
+            action.rel = "noopener noreferrer";
+            action.className = "whatsapp-sos-action";
+            action.innerHTML = '<i class="fab fa-whatsapp"></i><span>Send SOS on WhatsApp</span>';
+            document.querySelector(".whatsapp-sos-action")?.remove();
+            document.body.appendChild(action);
+        }
+
         sosBtn.addEventListener("click", () => {
             const confirmed = confirm("⚠️ ARE YOU SURE YOU WANT TO TRIGGER AN EMERGENCY SOS?\n\nThis will send your location to local authorities and nearby shelters.");
             
@@ -179,14 +202,13 @@ navigator.geolocation.getCurrentPosition(
         const longitude = position.coords.longitude;
 
         try {
-            const response = await API.request(
+            const response = await API.post(
                 "/sos",
-                "POST",
                 {
                     location: {
-                    latitude: latitude,
-                    longitude: longitude
-                     },
+                        latitude: latitude,
+                        longitude: longitude
+                    },
                     message: "Emergency SOS"
                 }
             );
@@ -197,6 +219,8 @@ navigator.geolocation.getCurrentPosition(
                 "🚨 SOS SIGNAL SENT SUCCESSFULLY!\n\n" +
                 "📍 Your current location has been sent to the emergency system."
             );
+
+            showWhatsAppAction(latitude, longitude);
 
             sosBtn.innerHTML =
                 '<i class="fas fa-check-circle"></i> SOS SENT';

@@ -151,42 +151,6 @@ document.addEventListener(
             );
 
 
-        // GITHUB
-
-        document
-            .getElementById(
-                "github-login"
-            )
-            ?.addEventListener(
-                "click",
-                async event => {
-
-                    const button =
-                        event.currentTarget;
-
-                    try {
-
-                        loading(button, true);
-
-                        await Auth.loginWithGithub();
-
-                        window.location.href =
-                            "dashboard.html";
-
-                    } catch (error) {
-
-                        showMessage(
-                            getFirebaseError(
-                                error
-                            )
-                        );
-
-                        loading(button, false);
-                    }
-                }
-            );
-
-
         // PHONE MODAL
 
         const phoneModal =
@@ -195,13 +159,32 @@ document.addEventListener(
             );
 
 
-        document
-            .getElementById(
+        const phoneButton =
+            document.getElementById(
                 "phone-login"
-            )
+            );
+
+        if (phoneButton && !window.Auth?.firebaseEnabled) {
+            phoneButton.disabled = true;
+            phoneButton.title = "Use the email or phone number field above to sign in.";
+            phoneButton.innerHTML = `
+                <i class="fa-solid fa-mobile-screen-button"></i>
+                Use email / phone login
+            `;
+        }
+
+        phoneButton
             ?.addEventListener(
                 "click",
                 () => {
+
+                    if (!window.Auth?.firebaseEnabled) {
+                        showMessage(
+                            "Phone OTP is unavailable because Firebase Auth is not configured. Please use the email or phone number field above.",
+                            "error"
+                        );
+                        return;
+                    }
 
                     phoneModal
                         ?.classList
@@ -564,8 +547,11 @@ function getFirebaseError(error) {
         "auth/popup-blocked":
             "Your browser blocked the authentication popup.",
 
+        "auth/operation-not-allowed":
+            "GitHub login is not enabled in Firebase. Enable GitHub under Firebase Console > Authentication > Sign-in method.",
+
         "auth/account-exists-with-different-credential":
-            "An account already exists using another login method.",
+            "This email already uses another login method. Sign in with that method first.",
 
         "auth/invalid-verification-code":
             "The OTP is incorrect.",

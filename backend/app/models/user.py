@@ -164,8 +164,7 @@ class UserCreate(BaseModel):
         max_length=128,
     )
     phone_number: str = Field(
-    ...,
-    min_length=10,
+    default="",
     max_length=20,
     description="Registered mobile number.",
     )
@@ -243,6 +242,8 @@ class UserPublic(BaseModel):
 
     role: str
 
+    credits: int = 0
+
     is_active: bool
 
     is_verified: bool
@@ -284,6 +285,8 @@ class UserAuthentication(BaseModel):
 
     role: str = "student"
 
+    credits: int = 0
+
     is_active: bool = True
 
     is_verified: bool = False
@@ -323,6 +326,8 @@ class UserDocument(BaseModel):
     password_hash: str
 
     role: str = "student"
+
+    credits: int = 0
 
     is_active: bool = True
 

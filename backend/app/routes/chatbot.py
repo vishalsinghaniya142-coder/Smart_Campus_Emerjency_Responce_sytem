@@ -3,6 +3,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.dependencies import get_current_user
+from app.services.ai_service import process_chat_message
 
 
 router = APIRouter()
@@ -42,10 +43,17 @@ async def chatbot(
             detail="Invalid chatbot request.",
         )
 
-    raise HTTPException(
-        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        detail=(
-            "Chatbot AI service is not connected yet. "
-            "Connect Member 3 chatbot service."
-        ),
-    )
+    message = str(payload.get("message") or "").strip()
+    if not message:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Please enter an emergency or safety question.",
+        )
+
+    try:
+        return await process_chat_message(message)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Safety assistant is temporarily unavailable: {exc}",
+        ) from exc

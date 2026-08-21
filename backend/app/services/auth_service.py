@@ -160,6 +160,15 @@ class UserRepository(Protocol):
         """
         ...
 
+    async def get_user_by_phone_number(
+        self,
+        phone_number: str,
+    ) -> Optional[UserAuthentication]:
+        """
+        Find a user using their phone number.
+        """
+        ...
+
     async def get_user_by_id(
         self,
         user_id: str,
@@ -486,7 +495,7 @@ async def authenticate_user(
         LoginRequest
              |
              v
-        normalize email
+        normalize email/phone identifier
              |
              v
         UserRepository
@@ -507,17 +516,24 @@ async def authenticate_user(
         return user + token
     """
 
-    # --------------------------------------------------------
-    # Normalize email
-    # --------------------------------------------------------
+    email = None
+    phone_number = None
 
-    email = validate_email(
-        str(payload.email)
-    )
+    if payload.email:
+        email = validate_email(
+            str(payload.email)
+        )
 
-    # --------------------------------------------------------
-    # Validate supplied password
-    # --------------------------------------------------------
+    if payload.phone_number:
+        clean_phone = str(payload.phone_number).strip()
+        if len(clean_phone) < 10 or len(clean_phone) > 20:
+            raise ValueError("Please provide a valid phone number.")
+        phone_number = clean_phone
+
+    if not email and not phone_number:
+        raise ValueError(
+            "Either email or phone number is required."
+        )
 
     password = payload.password
 
@@ -526,29 +542,17 @@ async def authenticate_user(
             "Password is required."
         )
 
-    # --------------------------------------------------------
-    # Get repository
-    # --------------------------------------------------------
-
     repository = get_user_repository()
 
-    # --------------------------------------------------------
-    # Find user
-    # --------------------------------------------------------
+    user = None
 
-    user = await repository.get_user_by_email(
-        email
-    )
+    if email:
+        user = await repository.get_user_by_email(email)
 
-    # --------------------------------------------------------
-    # Do not reveal whether email exists.
-    #
-    # The route will return the same authentication failure
-    # message for invalid email/password.
-    # --------------------------------------------------------
+    if user is None and phone_number:
+        user = await repository.get_user_by_phone_number(phone_number)
 
     if user is None:
-
         raise ValueError(
             "Invalid email or password."
         )
@@ -596,6 +600,7 @@ async def authenticate_user(
         id=user.id,
         name=user.name,
         email=user.email,
+        phone_number=user.phone_number,
         role=user.role,
         is_active=user.is_active,
         is_verified=user.is_verified,
@@ -646,6 +651,7 @@ async def get_user_by_id(
         id=user.id,
         name=user.name,
         email=user.email,
+        phone_number=user.phone_number,
         role=user.role,
         is_active=user.is_active,
         is_verified=user.is_verified,
@@ -771,6 +777,26 @@ async def update_user(
         sanitized_updates["email"] = email
 
     # --------------------------------------------------------
+    # Phone number
+    # --------------------------------------------------------
+
+    if "phone_number" in updates:
+
+        phone_number = str(updates["phone_number"]).strip()
+
+        if not phone_number:
+            raise ValueError(
+                "Phone number cannot be empty."
+            )
+
+        if len(phone_number) < 10 or len(phone_number) > 20:
+            raise ValueError(
+                "Phone number must be between 10 and 20 characters."
+            )
+
+        sanitized_updates["phone_number"] = phone_number
+
+    # --------------------------------------------------------
     # Role
     # --------------------------------------------------------
 
@@ -781,6 +807,12 @@ async def update_user(
                 str(updates["role"])
             )
         )
+
+    if "credits" in updates:
+        credits = int(updates["credits"])
+        if credits < 0:
+            raise ValueError("Credits cannot be negative.")
+        sanitized_updates["credits"] = credits
 
     # --------------------------------------------------------
     # Active status
@@ -854,11 +886,32 @@ async def update_user(
         id=updated_user.id,
         name=updated_user.name,
         email=updated_user.email,
+        phone_number=updated_user.phone_number,
         role=updated_user.role,
+        credits=updated_user.credits,
         is_active=updated_user.is_active,
         is_verified=updated_user.is_verified,
         created_at=updated_user.created_at,
         updated_at=updated_user.updated_at,
+    )
+
+
+async def award_user_credits(
+    user_id: str,
+    amount: int = 100,
+) -> Optional[UserPublic]:
+    """Award credits after a confirmed user action."""
+    if amount <= 0:
+        raise ValueError("Credit amount must be positive.")
+
+    repository = get_user_repository()
+    user = await repository.get_user_by_id(user_id)
+    if user is None:
+        return None
+
+    return await update_user(
+        user_id,
+        {"credits": user.credits + amount},
     )
 
 
@@ -878,6 +931,9 @@ async def activate_user(
         {
             "is_active": True,
         },
+
+        print(f"[AUTH SERVICE] Token created: {access_token[:20]}...")
+
     )
 
 

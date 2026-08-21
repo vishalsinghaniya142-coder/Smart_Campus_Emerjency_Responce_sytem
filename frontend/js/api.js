@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://127.0.0.1:8000";
+const API_BASE_URL = "http://127.0.0.1:8001";
 
 const API = {
 
@@ -110,10 +110,13 @@ const API = {
     clearSession() {
 
         localStorage.removeItem("emergency_token");
+        localStorage.removeItem("profile_branch");
+        localStorage.removeItem("profile_hostel");
         localStorage.removeItem("profileName");
         localStorage.removeItem("profileEmail");
         localStorage.removeItem("profilePhoto");
         localStorage.removeItem("profileProvider");
+        localStorage.removeItem("support_reference");
     }
 };
 

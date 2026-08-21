@@ -2,26 +2,36 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>AI Prediction - SafeGuard</title>
+    <title>AI Prediction - Suraksha_Setu</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/sidebar.css">
     <link rel="stylesheet" href="css/prediction.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body style="display: flex; background: #f4f7f9;">
+<body class="prediction-page">
     <div id="sidebar-placeholder"></div>
     
     <main class="prediction-main">
         <div class="prediction-header">
-            <h1><i class="fas fa-brain" style="color: var(--primary-color);"></i> AI Disaster Prediction</h1>
-            <p>Enter your location to get real-time AI analysis of potential environmental threats.</p>
+            <div>
+                <span class="prediction-kicker"><i class="fas fa-satellite-dish"></i> LIVE RISK INTELLIGENCE</span>
+                <h1><i class="fas fa-brain"></i> AI Disaster Prediction</h1>
+                <p>Read the latest environmental signals around your campus before risk becomes an emergency.</p>
+            </div>
+            <div class="prediction-signal"><span></span> Analysis engine online</div>
+        </div>
+
+        <div class="signal-strip" aria-label="Prediction data sources">
+            <span><i class="fas fa-cloud-rain"></i> Weather signals</span>
+            <span><i class="fas fa-globe-asia"></i> Earthquake feed</span>
+            <span><i class="fas fa-shield-alt"></i> Campus response</span>
         </div>
         
         <div class="prediction-card">
             <!-- Input Area -->
             <div class="search-box">
                 <i class="fas fa-search search-icon"></i>
-                <input type="text" id="location-input" placeholder="Enter City (e.g. Lucknow) or Pincode">
+                <input type="text" id="location-input" inputmode="numeric" maxlength="6" placeholder="Enter a 6-digit Indian pincode (e.g. 226010)">
                 <button id="analyze-btn" class="btn btn-primary">Analyze Risk</button>
             </div>
             
@@ -32,15 +42,15 @@
             </div>
 
             <!-- Dynamic Results Area (Hidden by default) -->
-            <div id="prediction-results" class="results-container hidden">
+            <div id="results-container" class="results-container hidden">
                 <h3 style="border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 20px;">
-                    Threat Analysis for: <span id="result-location" style="color: var(--primary-color);">Location</span>
+                    Threat Analysis for: <span id="location-display">Location</span>
                 </h3>
                 
                 <!-- Risk Item 1 -->
                 <div class="risk-item">
                     <div class="risk-label">
-                        <span><i class="fas fa-water" style="color: #3b82f6;"></i> Flood Risk</span>
+                        <span><i class="fas fa-brain" style="color: #3b82f6;"></i> AI Risk Score</span>
                         <span id="flood-val" class="risk-value">0%</span>
                     </div>
                     <div class="progress-bg"><div id="flood-bar" class="progress-fill" style="background: #3b82f6;"></div></div>
@@ -49,7 +59,7 @@
                 <!-- Risk Item 2 -->
                 <div class="risk-item">
                     <div class="risk-label">
-                        <span><i class="fas fa-house-damage" style="color: #8b5cf6;"></i> Earthquake Probability</span>
+                        <span><i class="fas fa-cloud-rain" style="color: #8b5cf6;"></i> Live Precipitation Probability</span>
                         <span id="quake-val" class="risk-value">0%</span>
                     </div>
                     <div class="progress-bg"><div id="quake-bar" class="progress-fill" style="background: #8b5cf6;"></div></div>
@@ -58,7 +68,7 @@
                 <!-- Risk Item 3 -->
                 <div class="risk-item">
                     <div class="risk-label">
-                        <span><i class="fas fa-cloud-showers-heavy" style="color: #f59e0b;"></i> Severe Weather</span>
+                        <span><i class="fas fa-wind" style="color: #f59e0b;"></i> Live Wind Exposure</span>
                         <span id="weather-val" class="risk-value">0%</span>
                     </div>
                     <div class="progress-bg"><div id="weather-bar" class="progress-fill" style="background: #f59e0b;"></div></div>
@@ -71,7 +81,8 @@
         </div>
     </main>
 
-    <script src="js/main.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/main.js?v=3"></script>
     <script src="js/prediction.js"></script>
 </body>
 </html>

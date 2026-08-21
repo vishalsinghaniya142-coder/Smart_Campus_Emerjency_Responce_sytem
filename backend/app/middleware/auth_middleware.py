@@ -39,6 +39,9 @@ DEFAULT_PUBLIC_PATHS: Set[str] = {
 
     "/auth/register",
     "/auth/login",
+    "/auth/info",
+    "/auth/firebase",
+    "/prediction/analyze",
 }
 
 

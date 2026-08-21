@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.dependencies import get_current_user
 from app.models.shelter import ShelterCreate
+from app.schemas.shelter_schema import ShelterUpdateRequest
 from app.utils.response import created_response
 from app.services.database.firebase_client import db
 
@@ -86,7 +87,7 @@ async def create_shelter(
     payload: ShelterCreate,
     current_user: Dict[str, Any] = Depends(get_current_user),
 ) -> Dict[str, Any]:
-    user_id = current_user.get("user_id")
+    user_id = current_user.get("user_id") or current_user.get("id") or current_user.get("sub")
     if not user_id:
         raise HTTPException(status_code=401, detail="Authenticated user could not be identified.")
 
@@ -104,6 +105,35 @@ async def create_shelter(
         data=shelter_for_map(document_ref.get()),
         message="Shelter created successfully.",
     )
+
+
+@router.patch("/{shelter_id}")
+async def update_shelter(
+    shelter_id: str,
+    payload: ShelterUpdateRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    user_id = current_user.get("user_id") or current_user.get("id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Authenticated user could not be identified.")
+
+    document_ref = db.collection(SHELTERS_COLLECTION).document(shelter_id)
+    document = document_ref.get()
+    if not document.exists:
+        raise HTTPException(status_code=404, detail="Shelter not found.")
+
+    updates = payload.model_dump(exclude_unset=True, exclude_none=True, mode="json")
+    if not updates:
+        raise HTTPException(status_code=400, detail="No shelter fields were provided.")
+
+    updates["updated_at"] = datetime.now(timezone.utc)
+    document_ref.update(normalize_firestore_value(updates))
+    updated_document = document_ref.get()
+    return {
+        "success": True,
+        "message": "Shelter updated successfully.",
+        "data": shelter_for_map(updated_document),
+    }
 
 @router.get("")
 async def get_shelters(
@@ -211,5 +241,26 @@ async def get_shelter(
         "success": True,
         "message": "Shelter retrieved successfully.",
         "data": shelter_for_map(document),
+        "shelter_id": shelter_id,
+    }
+
+
+@router.delete("/{shelter_id}")
+async def delete_shelter(
+    shelter_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    user_id = current_user.get("user_id") or current_user.get("id") or current_user.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Authenticated user could not be identified.")
+
+    document_ref = db.collection(SHELTERS_COLLECTION).document(shelter_id)
+    if not document_ref.get().exists:
+        raise HTTPException(status_code=404, detail="Shelter not found.")
+
+    document_ref.delete()
+    return {
+        "success": True,
+        "message": "Shelter deleted successfully.",
         "shelter_id": shelter_id,
     }

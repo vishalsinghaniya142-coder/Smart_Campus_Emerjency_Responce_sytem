@@ -37,8 +37,10 @@ class FirebaseUserRepository:
     "id": user.id,
     "name": user.name,
     "email": str(user.email),
+    "phone_number": user.phone_number,
     "password_hash": user.password_hash,
     "role": user.role,
+    "credits": user.credits,
     "is_active": user.is_active,
     "is_verified": user.is_verified,
     "created_at": user.created_at,
@@ -89,6 +91,75 @@ class FirebaseUserRepository:
             document.id,
             data,
         )
+
+    @staticmethod
+    def _normalize_phone_number(phone_number: str) -> str:
+        """Normalize a stored phone value for reliable lookup."""
+
+        if phone_number is None:
+            return ""
+
+        cleaned = "".join(ch for ch in str(phone_number).strip() if ch.isdigit() or ch == "+")
+
+        if cleaned.startswith("00"):
+            cleaned = "+" + cleaned[2:]
+
+        return cleaned
+
+    async def get_user_by_phone_number(
+        self,
+        phone_number: str,
+    ) -> Optional[UserAuthentication]:
+        """Find a user in Firestore using their phone number."""
+
+        if not phone_number:
+            return None
+
+        normalized_phone = self._normalize_phone_number(phone_number)
+        candidate_values = {normalized_phone}
+
+        if normalized_phone.startswith("+"):
+            candidate_values.add(normalized_phone[1:])
+        else:
+            candidate_values.add(f"+{normalized_phone}")
+
+        for candidate in sorted(candidate_values, key=len):
+            if not candidate:
+                continue
+
+            documents = list(
+                self.collection
+                .where(
+                    filter=FieldFilter(
+                        "phone_number",
+                        "==",
+                        candidate,
+                    ),
+                )
+                .limit(1)
+                .stream()
+            )
+
+            if documents:
+                document = documents[0]
+                return self._document_to_user(
+                    document.id,
+                    document.to_dict(),
+                )
+
+        return None
+
+    async def list_active_users(self) -> list[UserAuthentication]:
+        """Return active users whose registered phone can receive SOS SMS."""
+
+        documents = self.collection.where(
+            filter=FieldFilter("is_active", "==", True),
+        ).stream()
+
+        return [
+            self._document_to_user(document.id, document.to_dict())
+            for document in documents
+        ]
 
     # ========================================================
     # GET USER BY ID
@@ -261,6 +332,10 @@ class FirebaseUserRepository:
                 "email",
                 "",
             ),
+            phone_number=data.get(
+                "phone_number",
+                "",
+            ),
             password_hash=data.get(
                 "password_hash",
                 "",
@@ -269,6 +344,7 @@ class FirebaseUserRepository:
                 "role",
                 "student",
             ),
+            credits=int(data.get("credits", 0) or 0),
             is_active=data.get(
                 "is_active",
                 True,

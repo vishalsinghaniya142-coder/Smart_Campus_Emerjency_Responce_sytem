@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Protocol
 
@@ -147,6 +148,10 @@ _incident_ai_service: Optional[
     IncidentAIService
 ] = None
 
+_incident_notification_service: Optional[Any] = None
+
+logger = logging.getLogger(__name__)
+
 
 # ============================================================
 # CONFIGURE DATABASE REPOSITORY
@@ -231,6 +236,21 @@ def get_incident_ai_service() -> Optional[
     """
 
     return _incident_ai_service
+
+
+def configure_incident_notification_service(
+    notification_service: Any,
+) -> None:
+    """Register the concrete incident notification service."""
+    global _incident_notification_service
+    if notification_service is None:
+        raise ValueError("Incident notification service cannot be None.")
+    _incident_notification_service = notification_service
+
+
+def get_incident_notification_service() -> Optional[Any]:
+    """Return the configured incident notification service."""
+    return _incident_notification_service
 
 
 # ============================================================
@@ -389,6 +409,13 @@ async def create_incident(
             incident
         )
     )
+
+    notification_service = get_incident_notification_service()
+    if notification_service is not None:
+        try:
+            await notification_service.send_incident_notification(stored_incident)
+        except Exception as exc:
+            logger.warning(f"Incident SMS broadcast failed after save: {exc}")
 
     return stored_incident
 

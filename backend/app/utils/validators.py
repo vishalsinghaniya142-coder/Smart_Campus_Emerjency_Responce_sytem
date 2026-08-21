@@ -167,9 +167,9 @@ def validate_name(
             f"{MAX_NAME_LENGTH} characters."
         )
 
-    # Allow letters, spaces, apostrophes and hyphens.
+    # Allow letters, spaces, apostrophes, hyphens and account-style underscores.
     if not re.fullmatch(
-        r"[A-Za-zÀ-ÖØ-öø-ÿ' -]+",
+        r"[-0-9A-Za-zÀ-ÖØ-öø-ÿ_' ]+",
         name,
     ):
         raise ValueError(

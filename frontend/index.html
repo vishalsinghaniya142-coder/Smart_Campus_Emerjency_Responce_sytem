@@ -8,7 +8,8 @@
     <link rel="stylesheet" href="css/navbar.css">
     <link rel="stylesheet" href="css/footer.css">
     <link rel="stylesheet" href="css/home.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
 </head>
 <body style="display: flex; flex-direction: column; min-height: 100vh; background: #f8fafc;">
     
@@ -16,7 +17,7 @@
 
     <section class="hero-section">
         <div class="hero-content">
-            <span class="hero-badge"><i class="fas fa-shield-alt"></i> Next-Gen Campus Security</span>
+            <span class="hero-badge"><i class="fas fa-shield-alt" aria-hidden="true"></i> Next-Gen Campus Security</span>
             <h1>Your Safety, Our Priority. <span>Instant Emergency Response.</span></h1>
             <p>Smart Campus Emergency Response System is an intelligent campus safety platform that bridges the gap between students in distress and authorities. Get real-time AI threat predictions, live tracking, and instant SOS assistance.</p>
             
@@ -26,10 +27,33 @@
             </div>
         </div>
         <div class="hero-image">
-            <div class="floating-card">
-                <i class="fas fa-satellite-dish" style="color: #2563eb; font-size: 2rem; margin-bottom: 10px;"></i>
-                <h3>Active AI Monitoring</h3>
-                <p>Real-time environment & risk analysis running 24/7.</p>
+            <div class="floating-card" aria-label="Live campus safety status">
+                <div class="status-card-header">
+                    <div class="status-icon" aria-hidden="true">
+                        <i class="fas fa-satellite-dish"></i>
+                    </div>
+                    <div>
+                        <p class="status-eyebrow">Live operations</p>
+                        <h3>Campus status dashboard</h3>
+                    </div>
+                    <span class="status-pulse" title="Systems operational" aria-label="Systems operational"></span>
+                </div>
+                <p class="status-summary">Real-time environment and risk analysis is running 24/7.</p>
+                <div class="metrics-grid" aria-label="Current campus metrics">
+                    <div class="metric-item">
+                        <span class="metric-label">Campus status</span>
+                        <strong><span class="metric-dot" aria-hidden="true"></span>Normal</strong>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">Active guards</span>
+                        <strong>12</strong>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">Response time</span>
+                        <strong>&lt; 2 min</strong>
+                    </div>
+                </div>
+                <p class="status-updated"><i class="fas fa-clock" aria-hidden="true"></i> Updated moments ago</p>
             </div>
         </div>
     </section>
@@ -43,19 +67,19 @@
 
             <div class="features-grid">
                 <div class="feature-box">
-                    <div class="f-icon" style="background: #eff6ff; color: #2563eb;"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div class="f-icon" style="background: #eff6ff; color: #2563eb;"><i class="fas fa-exclamation-triangle" aria-hidden="true"></i></div>
                     <h3>Instant SOS Alert</h3>
                     <p>Trigger emergency beacons with precise GPS coordinates instantly sent to campus security.</p>
                 </div>
 
                 <div class="feature-box">
-                    <div class="f-icon" style="background: #fdf4ff; color: #9333ea;"><i class="fas fa-brain"></i></div>
+                    <div class="f-icon" style="background: #fdf4ff; color: #9333ea;"><i class="fas fa-brain" aria-hidden="true"></i></div>
                     <h3>AI Disaster Prediction</h3>
                     <p>Analyze weather patterns and environmental threats using advanced machine learning models.</p>
                 </div>
 
                 <div class="feature-box">
-                    <div class="f-icon" style="background: #f0fdf4; color: #16a34a;"><i class="fas fa-map-marked-alt"></i></div>
+                    <div class="f-icon" style="background: #f0fdf4; color: #16a34a;"><i class="fas fa-map-marked-alt" aria-hidden="true"></i></div>
                     <h3>Live Safe Zones & Map</h3>
                     <p>Locate the nearest emergency shelters, medical posts, and safe routes in real-time.</p>
                 </div>

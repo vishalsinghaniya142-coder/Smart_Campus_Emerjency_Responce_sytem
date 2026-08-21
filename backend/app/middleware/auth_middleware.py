@@ -60,6 +60,7 @@ DEFAULT_PUBLIC_PATHS: Set[str] = {
 DEFAULT_PUBLIC_PREFIXES: Set[str] = {
     "/docs/",
     "/redoc/",
+    "/shelters",
 }
 
 

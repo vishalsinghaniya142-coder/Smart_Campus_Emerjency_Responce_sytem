@@ -3,40 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <title>Report Incident - SafeGuard</title>
+
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/sidebar.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 </head>
+
 <body style="display: flex;">
+
     <div id="sidebar-placeholder"></div>
-    
+
     <main style="flex: 1; padding: 2rem; margin-left: 250px;">
+
         <h1>File an Emergency Report</h1>
-        
-        <form style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 600px; margin-top: 1rem;">
+
+        <form
+            id="incident-report-form"
+            style="
+                background: white;
+                padding: 2rem;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                max-width: 600px;
+                margin-top: 1rem;
+            "
+        >
+
+            <!-- Emergency Type -->
             <div style="margin-bottom: 1rem;">
-                <label>Type of Emergency</label>
-                <select id="incident-type" style="width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
-                    <option>Fire</option>
-                    <option>Flood</option>
-                    <option>Medical Emergency</option>
-                    <option>Accident</option>
+                <label for="incident-type">
+                    Type of Emergency
+                </label>
+
+                <select
+                    id="incident-type"
+                    required
+                    style="width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;"
+                >
+                    <option value="fire">Fire</option>
+
+                    <option value="medical">
+                        Medical Emergency
+                    </option>
+                    <option value="accident">Accident</option>
                 </select>
             </div>
+
+            <!-- Title -->
             <div style="margin-bottom: 1rem;">
-                <label>Location</label>
-                <input type="text" id="incident-location" placeholder="Fetch automatically or type address" style="width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
+                <label for="incident-title">
+                    Incident Title
+                </label>
+
+                <input
+                    type="text"
+                    id="incident-title"
+                    placeholder="Example: Fire in Engineering Block"
+                    required
+                    style="width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;"
+                >
             </div>
+
+            <!-- Location -->
             <div style="margin-bottom: 1rem;">
-                <label>Description</label>
-                <textarea id="incident-description" rows="4" style="width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;"></textarea>
-            <button type="submit" class="btn btn-primary">Submit Report</button>
+                <label for="incident-location">
+                    Location
+                </label>
+
+                <input
+                    type="text"
+                    id="incident-location"
+                    placeholder="Enter emergency location"
+                    required
+                    style="width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;"
+                >
+            </div>
+
+            <!-- Description -->
+            <div style="margin-bottom: 1rem;">
+                <label for="incident-description">
+                    Description
+                </label>
+
+                <textarea
+                    id="incident-description"
+                    rows="4"
+                    placeholder="Describe the emergency..."
+                    required
+                    style="width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;"
+                ></textarea>
+            </div>
+
+            <!-- Severity -->
+            <div style="margin-bottom: 1rem;">
+                <label for="incident-severity">
+                    Severity
+                </label>
+
+                <select
+                    id="incident-severity"
+                    required
+                    style="width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;"
+                >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                </select>
+            </div>
+
+            <button
+                type="submit"
+                id="submit-report-btn"
+                class="btn btn-primary"
+            >
+                Submit Report
+            </button>
+
         </form>
     </main>
 
     <script src="js/api.js"></script>
     <script src="js/main.js"></script>
     <script src="js/report.js"></script>
+
 </body>
 </html>

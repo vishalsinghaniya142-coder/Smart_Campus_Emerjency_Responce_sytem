@@ -249,7 +249,7 @@ async def update_profile(
     ):
 
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Profile update data must be an object.",
         )
 
@@ -311,7 +311,7 @@ async def update_profile(
         ):
 
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="Name must be a string.",
             )
 
@@ -325,7 +325,7 @@ async def update_profile(
         except ValueError as exc:
 
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=str(exc),
             ) from exc
 
@@ -345,7 +345,7 @@ async def update_profile(
         ):
 
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="Email must be a string.",
             )
 
@@ -358,7 +358,7 @@ async def update_profile(
         except ValueError as exc:
 
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=str(exc),
             ) from exc
 

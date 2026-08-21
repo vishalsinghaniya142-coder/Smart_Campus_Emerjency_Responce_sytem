@@ -1,26 +1,25 @@
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
-from app.models.user import UserAuthentication
+from google.cloud.firestore_v1.base_query import FieldFilter
+
 from app.services.database.firebase_client import db
+from app.models.user import UserAuthentication
 
 
 USERS_COLLECTION = "users"
 
 
-# ============================================================
-# FIREBASE USER REPOSITORY
-# ============================================================
-
 class FirebaseUserRepository:
     """
-    Firebase Firestore implementation of the UserRepository.
+    Firebase/Firestore implementation of the UserRepository contract.
 
-    This repository is responsible for persisting users in
-    Firebase Firestore.
-
-    Collection:
-        users
+    This class uses the existing Firestore connection from
+    firebase_client.py. No new Firebase connection is created here.
     """
+
+    def __init__(self):
+        self.collection = db.collection(USERS_COLLECTION)
 
     # ========================================================
     # CREATE USER
@@ -31,28 +30,22 @@ class FirebaseUserRepository:
         user: UserAuthentication,
     ) -> UserAuthentication:
         """
-        Create a new user in Firestore.
+        Store a new authenticated user in Firestore.
         """
 
         user_data = {
-            "id": user.id,
-            "name": user.name,
-            "email": str(user.email).strip().lower(),
-            "password_hash": user.password_hash,
-            "role": user.role,
-            "is_active": user.is_active,
-            "is_verified": user.is_verified,
-            "created_at": user.created_at,
-            "updated_at": user.updated_at,
-        }
+    "id": user.id,
+    "name": user.name,
+    "email": str(user.email),
+    "password_hash": user.password_hash,
+    "role": user.role,
+    "is_active": user.is_active,
+    "is_verified": user.is_verified,
+    "created_at": user.created_at,
+    "updated_at": user.updated_at,
+}
 
-        db.collection(
-            USERS_COLLECTION
-        ).document(
-            user.id
-        ).set(
-            user_data
-        )
+        self.collection.document(user.id).set(user_data)
 
         return user
 
@@ -65,48 +58,37 @@ class FirebaseUserRepository:
         email: str,
     ) -> Optional[UserAuthentication]:
         """
-        Find a user by email address.
+        Find a user in Firestore using email.
         """
 
-        documents = (
-            db.collection(
-                USERS_COLLECTION
-            )
+        normalized_email = email.strip().lower()
+
+        query = (
+            self.collection
             .where(
-                "email",
-                "==",
-                email.strip().lower(),
+                filter=FieldFilter(
+                    "email",
+                    "==",
+                    normalized_email,
+                ),
             )
             .limit(1)
             .stream()
         )
 
-        for document in documents:
+        documents = list(query)
 
-            data = document.to_dict()
+        if not documents:
+            return None
 
-            return UserAuthentication(
-                id=data["id"],
-                name=data["name"],
-                email=data["email"],
-                password_hash=data["password_hash"],
-                role=data.get(
-                    "role",
-                    "student",
-                ),
-                is_active=data.get(
-                    "is_active",
-                    True,
-                ),
-                is_verified=data.get(
-                    "is_verified",
-                    False,
-                ),
-                created_at=data["created_at"],
-                updated_at=data["updated_at"],
-            )
+        document = documents[0]
 
-        return None
+        data = document.to_dict()
+
+        return self._document_to_user(
+            document.id,
+            data,
+        )
 
     # ========================================================
     # GET USER BY ID
@@ -116,30 +98,173 @@ class FirebaseUserRepository:
         self,
         user_id: str,
     ) -> Optional[UserAuthentication]:
-        """
-        Find a user by Firestore document ID.
-        """
 
+        # 1. Try document ID
         document = (
-            db.collection(
-                USERS_COLLECTION
-            )
-            .document(
-                user_id
-            )
+            self.collection
+            .document(user_id)
             .get()
         )
+
+        if document.exists:
+            return self._document_to_user(
+                document.id,
+                document.to_dict(),
+            )
+
+        # 2. Fallback for existing documents
+        documents = list(
+            self.collection
+            .where(
+                filter=FieldFilter(
+                    "id",
+                    "==",
+                    user_id,
+                ),
+            )
+            .limit(1)
+            .stream()
+        )
+
+        if documents:
+            document = documents[0]
+
+            return self._document_to_user(
+                document.id,
+                document.to_dict(),
+            )
+
+        return None
+    # ========================================================
+    # UPDATE USER
+    # ========================================================
+
+    async def update_user(
+        self,
+        user_id: str,
+        updates: Dict[str, Any],
+    ) -> Optional[UserAuthentication]:
+        """
+        Update an existing user in Firestore.
+        """
+
+        document_ref = (
+            self.collection
+            .document(user_id)
+        )
+
+        document = document_ref.get()
 
         if not document.exists:
             return None
 
-        data = document.to_dict()
+        update_data = dict(updates)
+
+        if "email" in update_data:
+            update_data["email"] = (
+                str(update_data["email"])
+                .strip()
+                .lower()
+            )
+
+        if "updated_at" not in update_data:
+            update_data["updated_at"] = (
+                datetime.now(timezone.utc)
+            )
+
+        document_ref.update(update_data)
+
+        updated_document = document_ref.get()
+
+        if not updated_document.exists:
+            return None
+
+        return self._document_to_user(
+            updated_document.id,
+            updated_document.to_dict(),
+        )
+
+    # ========================================================
+    # DELETE USER
+    # ========================================================
+
+    async def delete_user(
+        self,
+        user_id: str,
+    ) -> bool:
+        """
+        Delete a user from Firestore.
+        """
+
+        document_ref = (
+            self.collection
+            .document(user_id)
+        )
+
+        document = document_ref.get()
+
+        if not document.exists:
+            return False
+
+        document_ref.delete()
+
+        return True
+
+    # ========================================================
+    # FIRESTORE DOCUMENT → USER MODEL
+    # ========================================================
+
+    @staticmethod
+    def _document_to_user(
+        user_id: str,
+        data: Dict[str, Any],
+    ) -> UserAuthentication:
+        """
+        Convert a Firestore document into UserAuthentication.
+        """
+
+        created_at = data.get(
+            "created_at"
+        )
+
+        updated_at = data.get(
+            "updated_at"
+        )
+
+        # Firestore timestamps can be converted to datetime.
+        if hasattr(created_at, "replace"):
+            created_at = created_at.replace(
+                tzinfo=timezone.utc
+            ) if created_at.tzinfo is None else created_at
+
+        if hasattr(updated_at, "replace"):
+            updated_at = updated_at.replace(
+                tzinfo=timezone.utc
+            ) if updated_at.tzinfo is None else updated_at
+
+        # Safety fallback for older documents.
+        if created_at is None:
+            created_at = datetime.now(
+                timezone.utc
+            )
+
+        if updated_at is None:
+            updated_at = created_at
 
         return UserAuthentication(
-            id=data["id"],
-            name=data["name"],
-            email=data["email"],
-            password_hash=data["password_hash"],
+            id=user_id,
+            name=data.get(
+                "name",
+                "",
+            ),
+            email=data.get(
+                "email",
+                "",
+            ),
+            password_hash=data.get(
+                "password_hash",
+                "",
+            ),
             role=data.get(
                 "role",
                 "student",
@@ -152,194 +277,6 @@ class FirebaseUserRepository:
                 "is_verified",
                 False,
             ),
-            created_at=data["created_at"],
-            updated_at=data["updated_at"],
+            created_at=created_at,
+            updated_at=updated_at,
         )
-
-    # ========================================================
-    # UPDATE USER
-    # ========================================================
-
-    async def update_user(
-        self,
-        user_id: str,
-        updates: Dict[str, Any],
-    ) -> Optional[UserAuthentication]:
-        """
-        Update an existing user.
-        """
-
-        document = (
-            db.collection(
-                USERS_COLLECTION
-            )
-            .document(
-                user_id
-            )
-            .get()
-        )
-
-        if not document.exists:
-            return None
-
-        db.collection(
-            USERS_COLLECTION
-        ).document(
-            user_id
-        ).update(
-            updates
-        )
-
-        return await self.get_user_by_id(
-            user_id
-        )
-
-    # ========================================================
-    # DELETE USER
-    # ========================================================
-
-    async def delete_user(
-        self,
-        user_id: str,
-    ) -> bool:
-        """
-        Delete an existing user.
-        """
-
-        document = (
-            db.collection(
-                USERS_COLLECTION
-            )
-            .document(
-                user_id
-            )
-            .get()
-        )
-
-        if not document.exists:
-            return False
-
-        db.collection(
-            USERS_COLLECTION
-        ).document(
-            user_id
-        ).delete()
-
-        return True
-
-
-# ============================================================
-# LEGACY CRUD FUNCTIONS
-# ============================================================
-# Kept so existing backend modules using the old helpers
-# continue to work.
-# ============================================================
-
-def create_user(
-    user_id,
-    name,
-    email,
-    role="student",
-    password_hash=None,
-    is_active=True,
-    is_verified=False,
-    created_at=None,
-    updated_at=None,
-):
-    """
-    Legacy helper for creating a user directly in Firestore.
-    """
-
-    user_data = {
-        "id": user_id,
-        "name": name,
-        "email": str(email).strip().lower(),
-        "role": role,
-        "is_active": is_active,
-        "is_verified": is_verified,
-    }
-
-    if password_hash is not None:
-        user_data["password_hash"] = password_hash
-
-    if created_at is not None:
-        user_data["created_at"] = created_at
-
-    if updated_at is not None:
-        user_data["updated_at"] = updated_at
-
-    db.collection(
-        USERS_COLLECTION
-    ).document(
-        user_id
-    ).set(
-        user_data
-    )
-
-    return {
-        "id": user_id,
-        **user_data,
-    }
-
-
-def get_user(
-    user_id,
-):
-    """
-    Legacy helper for getting a user from Firestore.
-    """
-
-    document = (
-        db.collection(
-            USERS_COLLECTION
-        )
-        .document(
-            user_id
-        )
-        .get()
-    )
-
-    if document.exists:
-        return {
-            "id": document.id,
-            **document.to_dict(),
-        }
-
-    return None
-
-
-def update_user(
-    user_id,
-    data,
-):
-    """
-    Legacy helper for updating a user.
-    """
-
-    db.collection(
-        USERS_COLLECTION
-    ).document(
-        user_id
-    ).update(
-        data
-    )
-
-    return get_user(
-        user_id
-    )
-
-
-def delete_user(
-    user_id,
-):
-    """
-    Legacy helper for deleting a user.
-    """
-
-    db.collection(
-        USERS_COLLECTION
-    ).document(
-        user_id
-    ).delete()
-
-    return True

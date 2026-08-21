@@ -5,31 +5,52 @@
     <title>Shelters - SafeGuard</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/sidebar.css">
+    <link rel="stylesheet" href="css/shelters.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 </head>
 <body style="display: flex;">
     <div id="sidebar-placeholder"></div>
-    
+
     <main style="flex: 1; padding: 2rem; margin-left: 250px;">
         <h1>Nearby Relief Shelters</h1>
-        
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-top: 2rem;">
-            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <h3>Central School Camp</h3>
-                <p><strong>Distance:</strong> 1.5 km</p>
-                <p><strong>Capacity:</strong> 150 / 500 (Available)</p>
-                <button class="btn btn-primary" style="margin-top: 10px;">Get Directions</button>
+
+        <section class="shelter-form-panel" aria-labelledby="add-shelter-heading">
+            <div class="shelter-form-heading">
+                <div>
+                    <p class="shelter-eyebrow">Firebase directory</p>
+                    <h2 id="add-shelter-heading">Add a shelter</h2>
+                </div>
+                <button id="use-current-location" class="btn btn-outline" type="button">
+                    <i class="fas fa-location-crosshairs" aria-hidden="true"></i> Use current location
+                </button>
             </div>
-            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <h3>City Community Center</h3>
-                <p><strong>Distance:</strong> 3.2 km</p>
-                <p><strong>Capacity:</strong> 480 / 500 (Almost Full)</p>
-                <button class="btn btn-primary" style="margin-top: 10px;">Get Directions</button>
-            </div>
+            <form id="add-shelter-form" class="shelter-form">
+                <input id="shelter-name" required minlength="2" placeholder="Shelter name" aria-label="Shelter name">
+                <input id="shelter-address" placeholder="Address" aria-label="Address">
+                <input id="shelter-latitude" required type="number" step="any" min="-90" max="90" placeholder="Latitude" aria-label="Latitude">
+                <input id="shelter-longitude" required type="number" step="any" min="-180" max="180" placeholder="Longitude" aria-label="Longitude">
+                <input id="shelter-capacity" required type="number" min="0" placeholder="Total capacity" aria-label="Total capacity">
+                <select id="shelter-status" aria-label="Shelter status">
+                    <option value="available">Available</option>
+                    <option value="limited">Limited</option>
+                    <option value="full">Full</option>
+                    <option value="closed">Closed</option>
+                </select>
+                <button class="btn btn-primary" type="submit">Save shelter</button>
+            </form>
+            <p id="add-shelter-status" class="shelter-form-status" role="status"></p>
+        </section>
+
+        <p id="shelters-list-status" role="status">Loading shelters from Firebase...</p>
+        <div id="shelter-grid" class="shelter-grid" aria-live="polite">
+            <p>Loading shelters...</p>
         </div>
     </main>
 
+    <script src="js/api.js"></script>
+    <script src="js/location.js"></script>
     <script src="js/main.js"></script>
+    <script src="js/shelters.js?v=3"></script>
 </body>
 </html>

@@ -327,6 +327,25 @@ class Settings:
         True,
     )
 
+    SMS_GATEWAY_URL: str = get_env(
+        "SMS_GATEWAY_URL",
+        "http://127.0.0.1:8080/message",
+    )
+
+    SMS_GATEWAY_USERNAME: str = get_env("SMS_GATEWAY_USERNAME")
+    SMS_GATEWAY_PASSWORD: str = get_env("SMS_GATEWAY_PASSWORD")
+    SMS_DEVICE_ID: str = get_env("SMS_DEVICE_ID")
+
+    SMS_ENABLED: bool = get_bool_env(
+        "SMS_ENABLED",
+        False,
+    )
+
+    SMS_RECIPIENTS: List[str] = get_list_env(
+        "SMS_RECIPIENTS",
+        "+917428368803,+919876543210",
+    )
+
     # --------------------------------------------------------
     # SECURITY SETTINGS
     # --------------------------------------------------------

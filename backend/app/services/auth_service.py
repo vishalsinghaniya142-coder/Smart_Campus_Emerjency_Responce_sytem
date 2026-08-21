@@ -292,6 +292,7 @@ def normalize_registration_data(
     return UserCreate(
         name=name,
         email=email,
+        phone_number=payload.phone_number,
         password=password,
         role=role,
     )
@@ -430,6 +431,7 @@ async def register_user(
         id=user_id,
         name=user_data.name,
         email=user_data.email,
+        phone_number=user_data.phone_number,
         password_hash=password_hash,
         role=user_data.role,
         is_active=True,
@@ -454,6 +456,7 @@ async def register_user(
         id=stored_user.id,
         name=stored_user.name,
         email=stored_user.email,
+        phone_number=stored_user.phone_number,
         role=stored_user.role,
         is_active=stored_user.is_active,
         is_verified=stored_user.is_verified,
@@ -990,6 +993,7 @@ def build_user_for_registration(
         ),
         name=user_data.name,
         email=user_data.email,
+        phone_number=user_data.phone_number,
         password_hash=password_hash,
         role=user_data.role,
         is_active=True,

@@ -70,6 +70,11 @@ class User(BaseModel):
         description="Unique email address of the user.",
         examples=["vishal@example.com"],
     )
+    phone_number: str = Field(
+    default="",
+    max_length=20,
+    description="Registered mobile number of the user.",
+    )
 
     # --------------------------------------------------------
     # ROLE
@@ -158,7 +163,12 @@ class UserCreate(BaseModel):
         min_length=8,
         max_length=128,
     )
-
+    phone_number: str = Field(
+    ...,
+    min_length=10,
+    max_length=20,
+    description="Registered mobile number.",
+    )
     role: str = Field(
         default="student",
         max_length=30,
@@ -191,6 +201,11 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = Field(
         default=None,
     )
+    phone_number: Optional[str] = Field(
+    default=None,
+    min_length=10,
+    max_length=20,
+   )
 
     role: Optional[str] = Field(
         default=None,
@@ -223,6 +238,8 @@ class UserPublic(BaseModel):
     name: str
 
     email: EmailStr
+
+    phone_number: str
 
     role: str
 
@@ -261,6 +278,8 @@ class UserAuthentication(BaseModel):
 
     email: EmailStr
 
+    phone_number: str = ""
+
     password_hash: str
 
     role: str = "student"
@@ -298,6 +317,8 @@ class UserDocument(BaseModel):
     name: str
 
     email: EmailStr
+
+    phone_number: str = ""
 
     password_hash: str
 
@@ -347,6 +368,7 @@ def build_user(
     user_id: str,
     name: str,
     email: str,
+    phone_number: str = "",
     role: str = "student",
     is_active: bool = True,
     is_verified: bool = False,
@@ -379,6 +401,7 @@ def build_user(
         id=str(user_id),
         name=name,
         email=email,
+        phone_number=phone_number,
         role=normalized_role,
         is_active=is_active,
         is_verified=is_verified,
@@ -450,6 +473,12 @@ def user_from_document(
         email=str(
             document["email"]
         ),
+        phone_number=str(
+            document.get(
+        "phone_number",
+        "",
+    )
+        ),
         role=str(
             document.get(
                 "role",
@@ -496,6 +525,7 @@ def user_to_public(
         id=user.id,
         name=user.name,
         email=user.email,
+        phone_number=user.phone_number,
         role=user.role,
         is_active=user.is_active,
         is_verified=user.is_verified,
@@ -527,6 +557,7 @@ def user_to_document(
         "email": str(
             user.email
         ),
+        "phone_number": user.phone_number,
         "password_hash": user.password_hash,
         "role": user.role,
         "is_active": user.is_active,

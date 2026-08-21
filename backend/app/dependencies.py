@@ -214,11 +214,12 @@ async def get_current_user(
     # --------------------------------------------------------
 
     current_user = {
-        "id": user_id,
-        "email": payload.get("email"),
-        "role": payload.get("role", "user"),
-        "authenticated": True,
-    }
+    "id": user_id,
+    "user_id": user_id,
+    "email": payload.get("email"),
+    "role": payload.get("role", "user"),
+    "authenticated": True,
+}
 
     return current_user
 

@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
@@ -14,100 +15,65 @@ from app.services.database.firebase_client import db
 ALERTS_COLLECTION = "alerts"
 
 
-def _serialize_value(value: Any) -> Any:
-    """Convert model values into Firestore-compatible values."""
-
-    if isinstance(value, Enum):
-        return value.value
-
-    if isinstance(value, dict):
-        return {
-            key: _serialize_value(item)
-            for key, item in value.items()
-        }
-
-    if isinstance(value, list):
-        return [
-            _serialize_value(item)
-            for item in value
-        ]
-
-    return value
-
-
-def _alert_to_firestore_data(
-    alert: Alert,
-) -> Dict[str, Any]:
-    """Convert Alert model to Firestore data."""
-
-    data = alert.model_dump(
-        mode="python",
-        exclude_none=True,
-    )
-
-    return _serialize_value(data)
-
-
-def _document_to_alert(
-    document,
-) -> Optional[Alert]:
-    """Convert Firestore document to Alert model."""
-
-    if not document.exists:
-        return None
-
-    data = document.to_dict()
-
-    data["id"] = document.id
-
-    try:
-        return Alert.model_validate(data)
-    except Exception:
-        # Ignore old/incompatible Firestore documents.
-        # Existing Firebase data is NOT modified or deleted.
-        return None
-
-
 class FirebaseAlertRepository:
-    """Firebase Firestore implementation of AlertRepository."""
+    """Firestore implementation of the alert service repository."""
 
-    async def create_alert(
-        self,
-        alert: Alert,
-    ) -> Alert:
+    def __init__(self) -> None:
+        self.collection = db.collection(ALERTS_COLLECTION)
 
-        data = _alert_to_firestore_data(
-            alert
+    @staticmethod
+    def _document_to_alert(document: Any) -> Alert:
+        data = document.to_dict() or {}
+        data["id"] = document.id
+
+        # Keep older alert documents readable after the schema grew.
+        data.setdefault("created_by", data.get("user_id", "system"))
+        data.setdefault("title", data.get("name", "Emergency Alert"))
+        data.setdefault(
+            "message",
+            data.get("description", data.get("details", "Please stay alert.")),
+        )
+        data.setdefault("alert_type", data.get("type", AlertType.EMERGENCY.value))
+        data.setdefault("severity", AlertSeverity.MEDIUM.value)
+        data.setdefault("audience", AlertAudience.ALL.value)
+        data.setdefault("status", AlertStatus.ACTIVE.value)
+        data.setdefault("created_at", datetime.now(timezone.utc))
+        data.setdefault("updated_at", data["created_at"])
+        return Alert.model_validate(data)
+
+    @staticmethod
+    def _alert_data(alert: Alert) -> Dict[str, Any]:
+        return FirebaseAlertRepository._normalize_firestore_value(
+            alert.model_dump(mode="python")
         )
 
-        db.collection(
-            ALERTS_COLLECTION
-        ).document(
-            alert.id
-        ).set(data)
+    @staticmethod
+    def _normalize_firestore_value(value: Any) -> Any:
+        if isinstance(value, Enum):
+            return value.value
+        if isinstance(value, dict):
+            return {
+                key: FirebaseAlertRepository._normalize_firestore_value(item)
+                for key, item in value.items()
+            }
+        if isinstance(value, list):
+            return [
+                FirebaseAlertRepository._normalize_firestore_value(item)
+                for item in value
+            ]
+        return value
 
+    async def create_alert(self, alert: Alert) -> Alert:
+        self.collection.document(alert.id).set(
+            self._alert_data(alert)
+        )
         return alert
 
-
-    async def get_alert_by_id(
-        self,
-        alert_id: str,
-    ) -> Optional[Alert]:
-
-        document = (
-            db.collection(
-                ALERTS_COLLECTION
-            )
-            .document(
-                alert_id
-            )
-            .get()
-        )
-
-        return _document_to_alert(
-            document
-        )
-
+    async def get_alert_by_id(self, alert_id: str) -> Optional[Alert]:
+        document = self.collection.document(alert_id).get()
+        if not document.exists:
+            return None
+        return self._document_to_alert(document)
 
     async def list_alerts(
         self,
@@ -118,114 +84,46 @@ class FirebaseAlertRepository:
         limit: int = 20,
         offset: int = 0,
     ) -> List[Alert]:
-
-        query = db.collection(
-            ALERTS_COLLECTION
-        )
-
-        if alert_type is not None:
-            query = query.where(
-                "alert_type",
-                "==",
-                alert_type.value,
-            )
-
-        if severity is not None:
-            query = query.where(
-                "severity",
-                "==",
-                severity.value,
-            )
-
-        if audience is not None:
-            query = query.where(
-                "audience",
-                "==",
-                audience.value,
-            )
-
-        if status is not None:
-            query = query.where(
-                "status",
-                "==",
-                status.value,
-            )
-
-        documents = query.stream()
-
-        alerts = []
-
-        for document in documents:
-            alert = _document_to_alert(
-                document
-            )
-
-            if alert is not None:
-                alerts.append(alert)
-
-        return alerts[
-            offset: offset + limit
+        alerts = [
+            self._document_to_alert(document)
+            for document in self.collection.stream()
         ]
 
+        if alert_type is not None:
+            alerts = [item for item in alerts if item.alert_type == alert_type]
+        if severity is not None:
+            alerts = [item for item in alerts if item.severity == severity]
+        if audience is not None:
+            alerts = [item for item in alerts if item.audience == audience]
+        if status is not None:
+            alerts = [item for item in alerts if item.status == status]
+
+        alerts.sort(
+            key=lambda item: item.created_at or datetime.min.replace(tzinfo=timezone.utc),
+            reverse=True,
+        )
+        return alerts[offset:offset + limit]
 
     async def update_alert(
         self,
         alert_id: str,
         updates: Dict[str, Any],
     ) -> Optional[Alert]:
-
-        document = (
-            db.collection(
-                ALERTS_COLLECTION
-            )
-            .document(
-                alert_id
-            )
-            .get()
-        )
-
+        document_ref = self.collection.document(alert_id)
+        document = document_ref.get()
         if not document.exists:
             return None
 
-        clean_updates = _serialize_value(
-            updates
-        )
+        update_data = dict(updates)
+        update_data = self._normalize_firestore_value(update_data)
 
-        db.collection(
-            ALERTS_COLLECTION
-        ).document(
-            alert_id
-        ).update(
-            clean_updates
-        )
+        document_ref.update(update_data)
+        updated_document = document_ref.get()
+        return self._document_to_alert(updated_document)
 
-        return await self.get_alert_by_id(
-            alert_id
-        )
-
-
-    async def delete_alert(
-        self,
-        alert_id: str,
-    ) -> bool:
-
-        document = (
-            db.collection(
-                ALERTS_COLLECTION
-            )
-            .document(
-                alert_id
-            )
-            .get()
-        )
-
-        if not document.exists:
+    async def delete_alert(self, alert_id: str) -> bool:
+        document_ref = self.collection.document(alert_id)
+        if not document_ref.get().exists:
             return False
-
-        db.collection(
-            ALERTS_COLLECTION
-        ).document(
-            alert_id
-        ).delete()
-
+        document_ref.delete()
         return True

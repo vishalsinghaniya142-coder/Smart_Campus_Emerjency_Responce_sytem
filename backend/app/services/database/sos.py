@@ -1,60 +1,59 @@
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+
+from google.cloud.firestore_v1.base_query import FieldFilter
+
+from app.services.database.firebase_client import db
 
 from app.models.sos import (
     SOS,
     sos_from_document,
     sos_to_document,
 )
-from app.services.database.firebase_client import db
 
 
 SOS_COLLECTION = "sos"
 
 
-class FirebaseSOSRepository:
-    """
-    Firebase Firestore repository for SOS operations.
-    """
+def _normalize_legacy_sos(data: Dict[str, Any]) -> Dict[str, Any]:
+    now = datetime.now(timezone.utc)
+    data.setdefault("status", "active")
+    data.setdefault("message", None)
+    data.setdefault("created_at", now)
+    data.setdefault("updated_at", data["created_at"])
+    return data
 
-    async def create_sos(
-        self,
-        sos: SOS,
-    ) -> SOS:
+
+class FirebaseSOSRepository:
+    """Firebase Firestore implementation for SOSRepository."""
+
+    async def create_sos(self, sos: SOS) -> SOS:
         data = sos_to_document(sos)
 
-        db.collection(
-            SOS_COLLECTION
-        ).document(
+        db.collection(SOS_COLLECTION).document(
             sos.id
         ).set(data)
 
         return sos
-
 
     async def get_sos_by_id(
         self,
         sos_id: str,
     ) -> Optional[SOS]:
 
-        document = (
-            db.collection(
-                SOS_COLLECTION
-            )
-            .document(
-                sos_id
-            )
+        doc = (
+            db.collection(SOS_COLLECTION)
+            .document(sos_id)
             .get()
         )
 
-        if not document.exists:
+        if not doc.exists:
             return None
 
-        data = document.to_dict()
+        data = doc.to_dict() or {}
+        data["id"] = doc.id
 
-        data["id"] = document.id
-
-        return sos_from_document(data)
-
+        return sos_from_document(_normalize_legacy_sos(data))
 
     async def list_sos_by_user(
         self,
@@ -63,36 +62,33 @@ class FirebaseSOSRepository:
         offset: int = 0,
     ) -> List[SOS]:
 
-        documents = (
-            db.collection(
-                SOS_COLLECTION
-            )
+        query = (
+            db.collection(SOS_COLLECTION)
             .where(
-                "user_id",
-                "==",
-                user_id,
+                filter=FieldFilter(
+                    "user_id",
+                    "==",
+                    user_id,
+                ),
             )
-            .stream()
+            .limit(limit + offset)
         )
 
-        sos_list = []
+        documents = list(query.stream())
 
-        for document in documents:
-            data = document.to_dict()
+        documents = documents[offset:offset + limit]
 
-            data["id"] = document.id
+        results = []
 
-            try:
-                sos = sos_from_document(data)
-                sos_list.append(sos)
-            except Exception:
-                # Ignore old/incompatible SOS documents.
-                continue
+        for doc in documents:
+            data = doc.to_dict() or {}
+            data["id"] = doc.id
 
-        return sos_list[
-            offset: offset + limit
-        ]
+            results.append(
+                sos_from_document(_normalize_legacy_sos(data))
+            )
 
+        return results
 
     async def update_sos(
         self,
@@ -100,27 +96,56 @@ class FirebaseSOSRepository:
         updates: Dict[str, Any],
     ) -> Optional[SOS]:
 
-        document = (
-            db.collection(
-                SOS_COLLECTION
-            )
-            .document(
-                sos_id
-            )
-            .get()
+        doc_ref = (
+            db.collection(SOS_COLLECTION)
+            .document(sos_id)
         )
 
-        if not document.exists:
+        doc = doc_ref.get()
+
+        if not doc.exists:
             return None
 
-        db.collection(
-            SOS_COLLECTION
-        ).document(
-            sos_id
-        ).update(
-            updates
-        )
+        doc_ref.update(updates)
 
-        return await self.get_sos_by_id(
-            sos_id
-        )
+        updated_doc = doc_ref.get()
+
+        data = updated_doc.to_dict() or {}
+        data["id"] = updated_doc.id
+
+        return sos_from_document(_normalize_legacy_sos(data))
+
+
+# ------------------------------------------------------------
+# Legacy helper functions
+# ------------------------------------------------------------
+
+def create_sos(sos_id, data):
+    """Create a new SOS request in Firestore."""
+
+    db.collection(SOS_COLLECTION).document(
+        sos_id
+    ).set(data)
+
+    return {
+        "id": sos_id,
+        **data,
+    }
+
+
+def get_sos(sos_id):
+    """Get an SOS request from Firestore."""
+
+    doc = (
+        db.collection(SOS_COLLECTION)
+        .document(sos_id)
+        .get()
+    )
+
+    if not doc.exists:
+        return None
+
+    return {
+        "id": doc.id,
+        **doc.to_dict(),
+    }

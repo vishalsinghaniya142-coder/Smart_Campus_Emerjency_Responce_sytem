@@ -1,116 +1,99 @@
-from datetime import datetime
 from enum import Enum
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+from app.services.database.firebase_client import db
 from app.models.incident import (
     Incident,
+    IncidentType,
     IncidentSeverity,
     IncidentStatus,
-    IncidentType,
 )
-from app.services.database.firebase_client import db
 
 
 INCIDENTS_COLLECTION = "incidents"
 
 
-def _serialize_value(value: Any) -> Any:
-    """
-    Convert Pydantic/Enum values into Firestore-compatible values.
-    """
-
+def _normalize_firestore_value(value: Any) -> Any:
     if isinstance(value, Enum):
         return value.value
-
     if isinstance(value, dict):
         return {
-            key: _serialize_value(item)
+            key: _normalize_firestore_value(item)
             for key, item in value.items()
         }
-
     if isinstance(value, list):
-        return [
-            _serialize_value(item)
-            for item in value
-        ]
-
+        return [_normalize_firestore_value(item) for item in value]
     return value
 
 
-def _incident_to_firestore_data(
-    incident: Incident,
-) -> Dict[str, Any]:
-    """
-    Convert Incident model into Firestore data.
-    """
-
-    data = incident.model_dump(
-        mode="python",
-        exclude_none=True,
+def _normalize_legacy_incident(data: Dict[str, Any]) -> Dict[str, Any]:
+    now = datetime.now(timezone.utc)
+    data.setdefault("reporter_id", data.get("user_id", "system"))
+    data.setdefault("incident_type", data.get("type", "other"))
+    data.setdefault("title", data.get("name", "Emergency Incident"))
+    data.setdefault(
+        "description",
+        data.get("message", data.get("details", "Please review this incident.")),
     )
-
-    return _serialize_value(data)
-
-
-def _document_to_incident(
-    document,
-) -> Optional[Incident]:
-    """
-    Convert Firestore document into Incident model.
-    """
-
-    if not document.exists:
-        return None
-
-    data = document.to_dict()
-
-    data["id"] = document.id
-
-    return Incident.model_validate(data)
+    data.setdefault("severity", data.get("severity"))
+    data.setdefault("images", [])
+    data.setdefault("ai_analysis", None)
+    data.setdefault("resolved_at", None)
+    data.setdefault("created_at", now)
+    data.setdefault("updated_at", data["created_at"])
+    if isinstance(data.get("location"), str):
+        data["location"] = {
+            "latitude": 0,
+            "longitude": 0,
+            "address": data["location"],
+        }
+    data.setdefault("location", {"latitude": 0, "longitude": 0})
+    if data.get("status") == "active":
+        data["status"] = "reported"
+    return data
 
 
 class FirebaseIncidentRepository:
-    """
-    Firebase Firestore implementation of IncidentRepository.
-    """
+    """Firebase/Firestore implementation of IncidentRepository."""
 
     async def create_incident(
         self,
         incident: Incident,
     ) -> Incident:
-
-        data = _incident_to_firestore_data(
-            incident
+        data = _normalize_firestore_value(
+            incident.model_dump(mode="python")
         )
+
+        incident_id = incident.id
 
         db.collection(
             INCIDENTS_COLLECTION
-        ).document(
-            incident.id
-        ).set(data)
+        ).document(incident_id).set(data)
 
         return incident
-
 
     async def get_incident_by_id(
         self,
         incident_id: str,
     ) -> Optional[Incident]:
 
-        document = (
+        doc = (
             db.collection(
                 INCIDENTS_COLLECTION
             )
-            .document(
-                incident_id
-            )
+            .document(incident_id)
             .get()
         )
 
-        return _document_to_incident(
-            document
-        )
+        if not doc.exists:
+            return None
 
+        data = _normalize_legacy_incident(doc.to_dict() or {})
+
+        data["id"] = doc.id
+
+        return Incident.model_validate(data)
 
     async def list_incidents(
         self,
@@ -122,54 +105,56 @@ class FirebaseIncidentRepository:
         offset: int = 0,
     ) -> List[Incident]:
 
-        query = db.collection(
-            INCIDENTS_COLLECTION
+        documents = (
+            db.collection(
+                INCIDENTS_COLLECTION
+            )
+            .stream()
         )
-
-        if incident_type is not None:
-            query = query.where(
-                "incident_type",
-                "==",
-                incident_type.value,
-            )
-
-        if severity is not None:
-            query = query.where(
-                "severity",
-                "==",
-                severity.value,
-            )
-
-        if status is not None:
-            query = query.where(
-                "status",
-                "==",
-                status.value,
-            )
-
-        if reporter_id is not None:
-            query = query.where(
-                "reporter_id",
-                "==",
-                reporter_id,
-            )
-
-        documents = query.stream()
 
         incidents = []
 
-        for document in documents:
-            incident = _document_to_incident(
-                document
-            )
+        for doc in documents:
 
-            if incident is not None:
-                incidents.append(incident)
+            data = _normalize_legacy_incident(doc.to_dict() or {})
+            data["id"] = doc.id
+
+            incident = Incident.model_validate(data)
+
+            if (
+                incident_type is not None
+                and incident.incident_type != incident_type
+            ):
+                continue
+
+            if (
+                severity is not None
+                and incident.severity != severity
+            ):
+                continue
+
+            if (
+                status is not None
+                and incident.status != status
+            ):
+                continue
+
+            if (
+                reporter_id is not None
+                and incident.reporter_id != reporter_id
+            ):
+                continue
+
+            incidents.append(incident)
+
+        incidents.sort(
+            key=lambda x: x.created_at,
+            reverse=True,
+        )
 
         return incidents[
-            offset: offset + limit
+            offset:offset + limit
         ]
-
 
     async def update_incident(
         self,
@@ -177,58 +162,95 @@ class FirebaseIncidentRepository:
         updates: Dict[str, Any],
     ) -> Optional[Incident]:
 
-        document = (
+        doc_ref = (
             db.collection(
                 INCIDENTS_COLLECTION
             )
-            .document(
-                incident_id
-            )
-            .get()
+            .document(incident_id)
         )
 
-        if not document.exists:
+        doc = doc_ref.get()
+
+        if not doc.exists:
             return None
 
-        clean_updates = _serialize_value(
-            updates
-        )
+        clean_updates = {}
 
-        db.collection(
-            INCIDENTS_COLLECTION
-        ).document(
-            incident_id
-        ).update(
-            clean_updates
-        )
+        for key, value in updates.items():
+
+            if hasattr(value, "value"):
+                value = value.value
+
+            if isinstance(value, Enum):
+                value = value.value
+
+            clean_updates[key] = value
+
+        doc_ref.update(clean_updates)
 
         return await self.get_incident_by_id(
             incident_id
         )
-
 
     async def delete_incident(
         self,
         incident_id: str,
     ) -> bool:
 
-        document = (
+        doc_ref = (
             db.collection(
                 INCIDENTS_COLLECTION
             )
-            .document(
-                incident_id
-            )
-            .get()
+            .document(incident_id)
         )
 
-        if not document.exists:
+        doc = doc_ref.get()
+
+        if not doc.exists:
             return False
 
-        db.collection(
-            INCIDENTS_COLLECTION
-        ).document(
-            incident_id
-        ).delete()
+        doc_ref.delete()
 
         return True
+
+
+# ------------------------------------------------------------
+# Backward-compatible helper functions
+# ------------------------------------------------------------
+
+def create_incident(
+    incident_id,
+    data,
+):
+    """Create a new emergency incident."""
+
+    db.collection(
+        INCIDENTS_COLLECTION
+    ).document(incident_id).set(data)
+
+    return {
+        "id": incident_id,
+        **data,
+    }
+
+
+def get_incident(
+    incident_id,
+):
+    """Get an incident from Firestore."""
+
+    doc = (
+        db.collection(
+            INCIDENTS_COLLECTION
+        )
+        .document(incident_id)
+        .get()
+    )
+
+    if not doc.exists:
+        return None
+
+    return {
+        "id": doc.id,
+        **doc.to_dict(),
+    }

@@ -1,5 +1,5 @@
 // js/profile.js
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     const editBtn = document.getElementById("edit-profile-btn");
     const logoutBtn = document.getElementById("logout-btn");
     const fileInput = document.getElementById("profile-upload");
@@ -19,17 +19,42 @@ document.addEventListener("DOMContentLoaded", () => {
     const editSection = document.getElementById("edit-section");
     let isEditing = false;
 
-    // Load Data
-    fields.forEach(f => {
-        const saved = localStorage.getItem(`profile_${f}`);
-        if(saved) {
-            dispEls[f].textContent = saved;
-            editEls[f].value = saved;
-        } else {
-            // Set initial edit input values from default HTML
-            editEls[f].value = dispEls[f].textContent;
+    async function loadProfile() {
+        const token = localStorage.getItem("emergency_token");
+        let user = null;
+
+        if (token && typeof API !== "undefined") {
+            try {
+                const response = await API.request("/users/profile");
+                user = response.data || response.user || response;
+            } catch (error) {
+                console.warn("Could not load the authenticated profile.", error);
+            }
         }
-    });
+
+        const values = {
+            name: user?.name || localStorage.getItem("profileName") || dispEls.name.textContent,
+            email: user?.email || localStorage.getItem("profileEmail") || dispEls.email.textContent,
+            username: localStorage.getItem("profile_username") || `@${(user?.email || "").split("@")[0]}`,
+            role: user?.role || localStorage.getItem("profile_role") || dispEls.role.textContent,
+            branch: localStorage.getItem("profile_branch") || dispEls.branch.textContent,
+            hostel: localStorage.getItem("profile_hostel") || dispEls.hostel.textContent,
+            phone: localStorage.getItem("profile_phone") || dispEls.phone.textContent,
+            address: localStorage.getItem("profile_address") || dispEls.address.textContent,
+            bio: localStorage.getItem("profile_bio") || dispEls.bio.textContent
+        };
+
+        fields.forEach((field) => {
+            const value = values[field] || "Not set";
+            dispEls[field].textContent = value;
+            editEls[field].value = value;
+        });
+
+        localStorage.setItem("profileName", values.name);
+        localStorage.setItem("profileEmail", values.email);
+    }
+
+    await loadProfile();
 
     if(localStorage.getItem("profilePic")) {
         imgPreview.src = localStorage.getItem("profilePic");

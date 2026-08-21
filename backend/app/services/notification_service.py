@@ -1,376 +1,322 @@
-from __future__ import annotations
+import os
+import smtplib
+import requests
+import logging
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from typing import List, Dict, Any, Optional
 
-from typing import Any, Dict, List, Optional, Protocol
+logger = logging.getLogger(__name__)
 
-from app.models.alert import Alert
+# --- General Notification Settings ---
+NOTIFICATION_ENABLED = os.getenv("NOTIFICATION_ENABLED", "true").lower() == "true"
+SMS_ENABLED = os.getenv("SMS_ENABLED", "true").lower() == "true"
+EMAIL_ENABLED = os.getenv("EMAIL_ENABLED", "false").lower() == "true"
+TELEGRAM_ENABLED = os.getenv("TELEGRAM_ENABLED", "false").lower() == "true"
 
+# --- SMS Gateway Settings ---
+# --- SMS Gateway Settings ---
+SMS_GATEWAY_URL = os.getenv(
+    "SMS_GATEWAY_URL",
+    "https://api.sms-gate.app",
+)
 
-# ============================================================
-# NOTIFICATION PROVIDER CONTRACT
-# ============================================================
-#
-# Member 2:
-#     API/service coordination
-#
-# Member 4:
-#     Actual Firebase/FCM implementation
-#
-# Flow:
-#
-#     alert_service.py
-#            |
-#            v
-#     notification_service.py
-#            |
-#            v
-#     NotificationProvider
-#            |
-#            v
-#     Member 4 Firebase / FCM
-#
-# ============================================================
+SMS_GATEWAY_USERNAME = os.getenv(
+    "SMS_GATEWAY_USERNAME",
+    "",
+)
 
+SMS_GATEWAY_PASSWORD = os.getenv(
+    "SMS_GATEWAY_PASSWORD",
+    "",
+)
 
-class NotificationProvider(Protocol):
-    """
-    Contract for the actual notification delivery provider.
-    """
+SMS_GATEWAY_DEVICE_ID = os.getenv(
+    "SMS_GATEWAY_DEVICE_ID",
+    "",
+)
 
-    async def send(
-        self,
-        notification: Dict[str, Any],
-    ) -> Any:
-        """
-        Deliver a notification.
-        """
-        ...
+SMS_ALERT_LIMIT = int(
+    os.getenv("SMS_ALERT_LIMIT", "10")
+)
 
-    async def cancel(
-        self,
-        notification_id: str,
-    ) -> Any:
-        """
-        Cancel a previously created notification.
-        """
-        ...
+# --- Email Settings ---
+SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+SMTP_USERNAME = os.getenv("SMTP_USERNAME", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+EMAIL_FROM = os.getenv("EMAIL_FROM", SMTP_USERNAME)
+
+# --- Telegram Settings ---
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 
 
-# ============================================================
-# PROVIDER INSTANCE
-# ============================================================
+# =========================================================
+# HELPER FUNCTIONS: SMS GATEWAY & ACTIVE FILTER
+# =========================================================
 
-_notification_provider: Optional[
-    NotificationProvider
-] = None
+def normalize_phone_number(phone: str) -> str:
+    """Phone number se extra symbols remove karta hai."""
+    if not phone:
+        return ""
+    return "".join([c for c in str(phone) if c.isdigit() or c == '+'])
 
+def send_sms_via_gateway(phone_number: str, message: str) -> bool:
+    """Send one SMS through SMS-Gate using JWT authentication."""
 
-# ============================================================
-# CONFIGURE PROVIDER
-# ============================================================
+    if not SMS_ENABLED:
+        logger.info("SMS dispatch skipped: SMS_ENABLED is false.")
+        return False
 
-def configure_notification_provider(
-    provider: NotificationProvider,
-) -> None:
-    """
-    Register the concrete notification provider.
+    clean_phone = normalize_phone_number(phone_number)
 
-    Member 4 can inject the Firebase/FCM implementation here.
-    """
+    if not clean_phone:
+        logger.warning("SMS skipped: empty phone number.")
+        return False
 
-    global _notification_provider
+    if not SMS_GATEWAY_USERNAME or not SMS_GATEWAY_PASSWORD:
+        logger.error("SMS Gateway credentials are not configured.")
+        return False
 
-    if provider is None:
-        raise ValueError(
-            "Notification provider cannot be None."
+    token_url = (
+        f"{SMS_GATEWAY_URL.rstrip('/')}"
+        "/3rdparty/v1/auth/token"
+    )
+
+    messages_url = (
+        f"{SMS_GATEWAY_URL.rstrip('/')}"
+        "/3rdparty/v1/messages"
+    )
+
+    try:
+        token_response = requests.post(
+            token_url,
+            auth=(
+                SMS_GATEWAY_USERNAME,
+                SMS_GATEWAY_PASSWORD,
+            ),
+            headers={
+                "Content-Type": "application/json"
+            },
+            json={
+                "ttl": 3600,
+                "scopes": ["messages:send"],
+            },
+            timeout=15,
         )
 
-    _notification_provider = provider
+        if token_response.status_code != 201:
+            logger.error(
+                f"SMS-Gate token request failed: "
+                f"{token_response.status_code} "
+                f"{token_response.text}"
+            )
+            return False
 
+        token_data = token_response.json()
+        access_token = token_data.get("access_token")
 
-# ============================================================
-# GET PROVIDER
-# ============================================================
+        if not access_token:
+            logger.error("SMS-Gate did not return an access token.")
+            return False
 
-def get_notification_provider() -> Optional[
-    NotificationProvider
-]:
-    """
-    Return the configured notification provider.
+        payload = {
+            "phoneNumbers": [clean_phone],
+            "textMessage": {
+                "text": message
+            },
+        }
 
-    None is allowed because the backend can still create
-    alerts when notification infrastructure is unavailable.
-    """
+        if SMS_GATEWAY_DEVICE_ID:
+            payload["deviceId"] = SMS_GATEWAY_DEVICE_ID
 
-    return _notification_provider
-
-
-# ============================================================
-# BUILD ALERT NOTIFICATION
-# ============================================================
-
-def build_alert_notification(
-    alert: Alert,
-) -> Dict[str, Any]:
-    """
-    Convert an Alert model into a provider-independent
-    notification payload.
-    """
-
-    if alert is None:
-        raise ValueError(
-            "Alert cannot be None."
+        response = requests.post(
+            messages_url,
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=15,
         )
+
+        if response.status_code in (200, 201, 202):
+            logger.info(
+                f"SMS successfully dispatched to {clean_phone}"
+            )
+            return True
+
+        logger.error(
+            f"SMS-Gate message request failed: "
+            f"{response.status_code} {response.text}"
+        )
+        return False
+
+    except requests.RequestException as exc:
+        logger.error(f"SMS Gateway network error: {exc}")
+        return False
+
+    except Exception as exc:
+        logger.error(f"Unexpected SMS error: {exc}")
+        return False
+
+
+def send_sms_to_active_contacts(contacts: List[Any], message: str) -> Dict[str, Any]:
+    """
+    Sirf active/activated contacts filter karta hai aur first 10 numbers ko SMS bhejta hai.
+    """
+    if not contacts:
+        return {"status": "skipped", "reason": "no_contacts", "sent_count": 0}
+
+    # 1. Filter only active contacts
+    active_contacts = []
+    for c in contacts:
+        if isinstance(c, dict):
+            is_act = c.get("is_active", False) or c.get("activated", False) or c.get("status") == "active"
+        else:
+            is_act = getattr(c, "is_active", False) or getattr(c, "activated", False) or getattr(c, "status", "") == "active"
+
+        if is_act:
+            active_contacts.append(c)
+
+    # 2. Limit to maximum 10 active numbers
+    selected_targets = active_contacts[:SMS_ALERT_LIMIT]
+
+    sent_count = 0
+    failed_count = 0
+    delivered_numbers = []
+
+    for contact in selected_targets:
+        if isinstance(contact, dict):
+            phone = contact.get("phone") or contact.get("phone_number") or contact.get("mobile")
+        else:
+            phone = getattr(contact, "phone", None) or getattr(contact, "phone_number", None) or getattr(contact, "mobile", None)
+
+        if not phone:
+            continue
+
+        success = send_sms_via_gateway(phone, message)
+        if success:
+            sent_count += 1
+            delivered_numbers.append(phone)
+        else:
+            failed_count += 1
 
     return {
-        "notification_id": (
-            f"alert_notification_{alert.id}"
-        ),
-
-        "type": "emergency_alert",
-
-        "title": alert.title,
-
-        "message": alert.message,
-
-        "alert_id": alert.id,
-
-        "severity": (
-            alert.severity.value
-        ),
-
-        "audience": (
-            alert.audience.value
-        ),
-
-        "data": {
-            "alert_id": alert.id,
-            "type": "emergency_alert",
-            "severity": (
-                alert.severity.value
-            ),
-        },
+        "status": "completed",
+        "total_active_found": len(active_contacts),
+        "targeted_limit": SMS_ALERT_LIMIT,
+        "sent_count": sent_count,
+        "failed_count": failed_count,
+        "delivered_to": delivered_numbers
     }
 
 
-# ============================================================
-# SEND ALERT NOTIFICATION
-# ============================================================
+# =========================================================
+# NOTIFICATION SERVICE CLASS
+# =========================================================
+class SmsGatewayNotificationService:
+    """Adapter for sending SMS through SMS-Gate."""
 
-async def send_alert_notification(
-    alert: Alert,
-) -> Any:
-    """
-    Send an emergency alert notification.
+    async def send_message(
+        self,
+        phone_number: str,
+        message: str,
+    ) -> Dict[str, Any]:
 
-    This function is intentionally provider-agnostic.
-
-    The actual Firebase/FCM implementation is injected later.
-    """
-
-    if alert is None:
-        raise ValueError(
-            "Alert cannot be None."
+        success = send_sms_via_gateway(
+            phone_number,
+            message,
         )
 
-    notification = build_alert_notification(
-        alert
-    )
-
-    provider = get_notification_provider()
-
-    # --------------------------------------------------------
-    # Notification infrastructure is not connected yet.
-    # --------------------------------------------------------
-
-    if provider is None:
+        if success:
+            return {
+                "success": True,
+                "phone_number": phone_number,
+                "message": "SMS submitted successfully.",
+            }
 
         return {
             "success": False,
-            "sent": False,
-            "provider": None,
-            "notification": notification,
-            "message": (
-                "Notification provider is not configured."
-            ),
+            "phone_number": phone_number,
+            "message": "SMS could not be sent.",
         }
+class NotificationService:
+    @staticmethod
+    def send_email(to_email: str, subject: str, body: str) -> bool:
+        if not EMAIL_ENABLED or not SMTP_USERNAME or not SMTP_PASSWORD:
+            return False
+        try:
+            msg = MIMEMultipart()
+            msg["From"] = EMAIL_FROM
+            msg["To"] = to_email
+            msg["Subject"] = subject
+            msg.attach(MIMEText(body, "plain"))
 
-    # --------------------------------------------------------
-    # Send through configured provider.
-    # --------------------------------------------------------
+            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+                server.starttls()
+                server.login(SMTP_USERNAME, SMTP_PASSWORD)
+                server.send_message(msg)
+            return True
+        except Exception as e:
+            logger.error(f"Email sending failed: {str(e)}")
+            return False
 
-    result = await provider.send(
-        notification
-    )
+    @staticmethod
+    def send_telegram(message: str) -> bool:
+        if not TELEGRAM_ENABLED or not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+            return False
+        try:
+            url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+            payload = {"chat_id": TELEGRAM_CHAT_ID, "text": message, "parse_mode": "HTML"}
+            res = requests.post(url, json=payload, timeout=8)
+            return res.status_code == 200
+        except Exception as e:
+            logger.error(f"Telegram alert failed: {str(e)}")
+            return False
 
-    return result
-
-
-# ============================================================
-# CANCEL ALERT NOTIFICATION
-# ============================================================
-
-async def cancel_alert_notification(
-    alert: Alert,
-) -> Any:
-    """
-    Cancel/revoke an emergency alert notification.
-    """
-
-    if alert is None:
-        raise ValueError(
-            "Alert cannot be None."
-        )
-
-    notification_id = (
-        f"alert_notification_{alert.id}"
-    )
-
-    provider = get_notification_provider()
-
-    # --------------------------------------------------------
-    # Provider unavailable.
-    # --------------------------------------------------------
-
-    if provider is None:
-
-        return {
-            "success": False,
-            "cancelled": False,
-            "provider": None,
-            "notification_id": notification_id,
-            "message": (
-                "Notification provider is not configured."
-            ),
-        }
-
-    # --------------------------------------------------------
-    # Cancel through configured provider.
-    # --------------------------------------------------------
-
-    result = await provider.cancel(
-        notification_id
-    )
-
-    return result
+    @classmethod
+    def send_sos_broadcast(
+        cls,
+        title: str,
+        message: str,
+        contacts: Optional[List[Any]] = None,
+        location: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        return send_emergency_notification(title, message, contacts, location)
 
 
-# ============================================================
-# GENERIC NOTIFICATION
-# ============================================================
+# =========================================================
+# STANDALONE DISPATCHER FUNCTIONS
+# =========================================================
 
-async def send_notification(
-    notification: Dict[str, Any],
-) -> Any:
-    """
-    Send a generic notification.
-
-    Useful later for:
-        - SOS notifications
-        - incident notifications
-        - system notifications
-        - shelter notifications
-    """
-
-    if not isinstance(
-        notification,
-        dict,
-    ):
-
-        raise ValueError(
-            "Notification must be a dictionary."
-        )
-
-    if not notification:
-
-        raise ValueError(
-            "Notification cannot be empty."
-        )
-
-    provider = get_notification_provider()
-
-    if provider is None:
-
-        return {
-            "success": False,
-            "sent": False,
-            "provider": None,
-            "notification": notification,
-            "message": (
-                "Notification provider is not configured."
-            ),
-        }
-
-    return await provider.send(
-        notification
-    )
-
-
-# ============================================================
-# NOTIFICATION AVAILABILITY
-# ============================================================
-
-def is_notification_provider_configured() -> bool:
-    """
-    Check whether a concrete notification provider
-    has been connected.
-    """
-
-    return (
-        _notification_provider
-        is not None
-    )
-
-
-# ============================================================
-# ALERT NOTIFICATION ID
-# ============================================================
-
-def get_alert_notification_id(
-    alert_id: str,
-) -> str:
-    """
-    Generate the stable notification identifier for an alert.
-    """
-
-    if not alert_id:
-        raise ValueError(
-            "Alert ID is required."
-        )
-
-    return (
-        f"alert_notification_{alert_id}"
-    )
-
-
-# ============================================================
-# PUBLIC NOTIFICATION DATA
-# ============================================================
-
-def notification_to_public_data(
-    result: Any,
+def send_emergency_notification(
+    alert_title: str,
+    alert_message: str,
+    contacts: Optional[List[Any]] = None,
+    location_details: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
-    """
-    Convert a provider result into a JSON-safe response.
+    if not NOTIFICATION_ENABLED:
+        logger.info("Emergency notifications are globally disabled.")
+        return {"status": "disabled"}
 
-    This keeps provider-specific response objects from leaking
-    directly through the API layer.
-    """
+    full_message = f"🚨 {alert_title} 🚨\n{alert_message}"
+    if location_details and location_details.get("maps_url"):
+        full_message += f"\nLocation: {location_details.get('maps_url')}"
 
-    if result is None:
+    # SMS Dispatch to Active 10
+    sms_summary = {}
+    if contacts and SMS_ENABLED:
+        sms_summary = send_sms_to_active_contacts(contacts, full_message)
 
-        return {
-            "success": False,
-            "result": None,
-        }
-
-    if isinstance(
-        result,
-        dict,
-    ):
-
-        return result
+    telegram_status = False
+    if TELEGRAM_ENABLED:
+        telegram_status = NotificationService.send_telegram(full_message)
 
     return {
-        "success": True,
-        "result": result,
+        "status": "success",
+        "alert_title": alert_title,
+        "sms_dispatch": sms_summary,
+        "telegram_sent": telegram_status
     }

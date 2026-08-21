@@ -880,3 +880,42 @@ async def alert_api_info() -> dict[str, Any]:
             }
         },
     }
+# ============================================================
+# EMERGENCY SOS TRIGGER (SMS to Top 10 Active Contacts)
+# ============================================================
+
+@router.post(
+    "/sos",
+    status_code=status.HTTP_200_OK,
+)
+async def trigger_emergency_sos(
+    payload: dict[str, Any],
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    """
+    Trigger emergency SOS alert and dispatch SMS to active contacts.
+    """
+    user_id = current_user.get("user_id")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authenticated user could not be identified.",
+        )
+
+    title = payload.get("title", "CAMPUS EMERGENCY ALERT")
+    message = payload.get("message", "Emergency SOS triggered! Please proceed to the safe zone.")
+    location = payload.get("location", {})
+    contacts_list = payload.get("contacts", [])
+
+    # Dispatch to max 10 active contacts via SMS Gateway
+    notification_result = send_emergency_notification(
+        alert_title=title,
+        alert_message=message,
+        contacts=contacts_list,
+        location_details=location,
+    )
+
+    return resource_response(
+        data=notification_result,
+        message="Emergency SOS alert dispatched successfully.",
+    )
